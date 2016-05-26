@@ -1,6 +1,16 @@
 var circuit_map = {};
 //var stream_to_host_map = {}; TODO: Needed?
 var stream_to_client_map = {};
+var node_to_socket_map = {};
+
+var addNodeToSocketMapping(nid, socket) {
+    //TODO: check for overwrites?
+    node_to_socket_map[nid] = socket;
+}
+
+var getNodeToSocketMapping(nid) {
+    return node_to_socket_map[nid];
+}
 
 function addCircuitMapping(srcID, srcCircID, destID, destCircID) {
     if (getCircuitMapping(srcID, srcCircID) != null) {
