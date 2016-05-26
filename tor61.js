@@ -1,6 +1,6 @@
 // SETUP
 // Setup listening socket, but ignore requests until registered
-//  handlers 
+//  handlers
 // Setup any datastructures
 // Build a circuit:
 //  Connect to other nodes
@@ -32,23 +32,8 @@
 // CircID->node->socket
 
 // Event loop for internal sockets
-//  If either-end node:
-//   should be using mapping from circID->streamID->socket_out
-//   -> in separate asynchronous function
-//   -> function/event loop should be mapped on a streamID
-//   event loop:
-//    .on('data', function(data){
-//      buffer.append(data);
-//    })
-//    setup() {
-//      parse buffer etc.
-//      once we have host
-//      send full buffer and any further data to host
-//      change .on('data' function() {
-//        forward to server
-//      });
-//    }
-//   Either forward to server with existing connection 
+//   If end node for circuit, call to lib for sending to server.
+//   Either forward to server with existing connection
 //   or
 //   Create new connection to host
 //    dns lookup
@@ -56,8 +41,4 @@
 //    callbacks => multiplex circID/socket etc.
 //  Forward all incoming data according to circuit map
 
-
-// Event loop for client socket
-//  similar to proxy event loop
-//  once ready, map streamID->socket_out
-
+//client event loop
