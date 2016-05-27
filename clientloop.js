@@ -15,13 +15,14 @@ var dns = require('dns');
 var date = new Date();
 var mapping = require('./mappings');
 
-var first_hop_socket = new net.Socket();
-var circuit_id = 1;
+//TODO: replace with actual first hop socket from circuit we create.
+var first_hop_socket = new net.Socket(); //placeholder
+//TODO: replace with actual circuit id
+var circuit_id = 1; //placeholder
 
-var stream_id = 0;
-
+var stream_id_counter = 1;
 function getNewStreamID() {
-    return stream_id++;
+    return stream_id_counter++;
 }
 
 var args = process.argv.slice(2);
@@ -34,6 +35,7 @@ var clientFacingPort = args[0];
 var server = net.createServer(function (clientSocket) {
     var haveSeenEndOfHeader = false;
     var header = "";
+    var stream_id = getNewStreamID();
 
     clientSocket.on('end', function() {
         //TODO: end stream with RELAY_END cell
@@ -56,6 +58,8 @@ var server = net.createServer(function (clientSocket) {
             header += dataString;
             if (header.includes('\r\n\r\n') || header.includes('\n\n')) {
                 haveSeenEndOfHeader = true;
+                // pause the socket so that we can initiate a stream.
+                clientSocket.pause();
                 var trimmedHeader = header.split(/(\r\n\r\n|\n\n)/);
                 var headerLines = trimmedHeader[0].split(/[\r]?\n/);
                 var extraData = trimmedHeader[1];
@@ -110,14 +114,56 @@ var server = net.createServer(function (clientSocket) {
                 var hostName = hostFieldComponents[0];
                 var hostPort = determineServerPort(hostFieldComponents, requestURI);
 
+                dns.lookup(hostName, (err, address, family) => {
+                    if (err) {
+                        console.log('lookup failure');
+                        // some sort of 404 or could not resolve
+                        clientSocket.end();
+                        return;
+                    }
+                    beginRelay(address, hostPort);
+                });
+
                 function beginRelay(hostname, port) {
                     // Assign on msg based upon connection type Connect vs Get
                     // each callback should have a static definition (?)
 
                     var body = hostname + ":" + port + "\0";
-                    var relay_begin_cell = protocol.packRelay(circuit_id, getNewStreamID(), protocol.RELAY_BEGIN, body);
+                    var relay_begin_cell = protocol.packRelay(circuit_id, stream_id, protocol.RELAY_BEGIN, body);
+                    first_hop_socket.write(relay_begin_cell);
 
-                    if (requestType == "CONNECT") {
+                    /*
+                    TODO: in main node loop, when we get a RELAY_CONNECTED,
+                    emit an event that will be received here.
+                    When we receive this event, we know that it is okay to
+                    forward data on our new stream.
+
+                    emit in the format:
+                        emitter.emit("relay_connected", circuitid, streamid)
+                    */
+
+                    emitter.on("relay_connected", (_circuit_id, _stream_id) => {
+                        if (_circuit_id == circuit_id && _stream_id == stream_id)
+                        {
+                                // This is the response for the stream we began
+                                //TODO: send 200 to client here?
+                                // Resume listening for data on client socket so
+                                // that we can forward it along the new stream.
+                                clientSocket.resume();
+                        }
+                    });
+
+                    emitter.on("relay_begin_failed", (_circuit_id, _stream_id) => {
+                        if (_circuit_id == circuit_id && _stream_id == stream_id)
+                        {
+                            // The stream we tried to begin could not be created.
+                            // TODO: send error message to client? or try again?
+                            // For now, just close the client connection.
+                            clientSocket.end();
+                        }
+                    });
+
+                    /*if (requestType == "CONNECT") {
                         serverSocket.on("error", function() {
                             // send 502 bad gateway
                             var msg = "HTTP/1.1 502 Bad Gateway\r\n\r\n";
@@ -139,24 +185,19 @@ var server = net.createServer(function (clientSocket) {
                             var modifiedHeader = buildHTTPHeader(requestLineComponents, optionMap);
                             serverSocket.write(modifiedHeader + extraData);
                         });
-                    }
-                    // Connect to Host/Port
-                    //TODO: send relay begin
+                    }*/
                 }
-                dns.lookup(hostName, (err, address, family) => {
-                    if (err) {
-                        console.log('lookup failure');
-                        // some sort of 404 or could not resolve
-                        clientSocket.end();
-                        return;
-                    }
-                    beginRelay(address, hostPort);
-                });
             }
         } else {
-            // we have seen the header
-            //TODO: first, package in cell(s)
-            serverSocket.write(data);
+            // Forward data along circuit
+            while (data.length > 498) {
+                var body = data.slice(0, 497);
+                var relay_data_cell = protocol.packRelay(circuit_id, stream_id, RELAY_DATA, body);
+                first_hop_socket.write(relay_data_cell);
+                data = Buffer.from(data, 498);
+            }
+            var relay_data_cell = protocol.packRelay(circuit_id, stream_id, RELAY_DATA, body);
+            first_hop_socket.write(relay_data_cell);
         }
     });
 
