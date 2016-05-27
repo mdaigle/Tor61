@@ -19,10 +19,12 @@ exports.RELAY_BEGIN_FAILED  = RELAY_BEGIN_FAILED = 11;
 exports.RELAY_EXTEND_FAILED = RELAY_EXTEND_FAILED = 12;
 
 exports.packMainFields = function(circuit_id, command, message_buffer) {
-    message_buffer = message_buffer || new Buffer(3);
+    message_buffer = message_buffer || new Buffer(512);
 
     message_buffer.writeUInt16BE(circuit_id, 0);
     message_buffer.writeUInt8(command, 2);
+
+    message_buffer.fill(0, 3);
 
     return message_buffer;
 }
@@ -40,7 +42,7 @@ exports.packDestroy = function(circuit_id) {
 }
 
 exports.packOpen = function(sender_id, receiver_id) {
-    message_buffer = new Buffer(11);
+    message_buffer = new Buffer(512);
     message_buffer = packMainFields(0, OPEN, message_buffer);
 
     message_buffer.writeUInt32BE(sender_id, 3);
@@ -50,7 +52,7 @@ exports.packOpen = function(sender_id, receiver_id) {
 }
 
 exports.packOpened = function(sender_id, receiver_id) {
-    message_buffer = new Buffer(11);
+    message_buffer = new Buffer(512);
     message_buffer = packMainFields(0, OPENED, message_buffer);
 
     // Same as an open, so ids should stay in same order
@@ -61,7 +63,7 @@ exports.packOpened = function(sender_id, receiver_id) {
 }
 
 exports.packOpenFailed = function(sender_id, receiver_id) {
-    message_buffer = new Buffer(11);
+    message_buffer = new Buffer(512);
     message_buffer = packMainFields(0, OPEN_FAILED, message_buffer);
 
     // Same as an open, so ids should stay in same order
@@ -78,7 +80,7 @@ exports.packCreateFailed = function(circuit_id) {
 // Body parameter should be a buffer.
 exports.packRelay = function(circuit_id, stream_id, relay_command, body) {
     body_length = body.length;
-    message_buffer = new Buffer(14 + body_length);
+    message_buffer = new Buffer(512);
 
     message_buffer = packMainFields(circuit_id, RELAY, message_buffer);
 
