@@ -1,6 +1,6 @@
 var circuit_map = {};
 //var stream_to_host_map = {}; TODO: Needed?
-var stream_to_client_map = {};
+var stream_to_socket_map = {};
 var node_to_socket_map = {};
 
 var addNodeToSocketMapping(nid, socket) {
@@ -78,23 +78,24 @@ function getStreamToHostMapping(srcID, srcCircID, srcStreamID) {
     return null;
 }*/
 
-function addStreamToClientMapping(srcID, srcCircID, srcStreamID, clientSocket) {
+function addStreamToSocketMapping(srcID, srcCircID, srcStreamID, socket) {
     if (getCircuitMapping(srcID, srcCircID) != null) {
         throw "Trying to get stream to client mapping, but we are not the first node in the circuit.";
     }
 
-    if (getStreamToClientMapping(srcID, srcCircID, srcStreamID) != null) {
+    if (getStreamToSocketMapping(srcID, srcCircID, srcStreamID) != null) {
         throw "A mapping already exists for this stream.";
     }
 
-    stream_to_client_map[srcID][srcCircID][srcStreamID] = clientSocket;
+    stream_to_socket_map[srcID][srcCircID][srcStreamID] = socket;
+    //stream_to_socket_map[socket] = {nid: srcID, circid: srcCircID, streamid: srcStreamID};
 }
 
-function getStreamToClientMapping(srcID, srcCircID, srcStreamID) {
-    if (srcID in stream_to_client_map) {
-        if (srcCircID in stream_to_client_map[srcID]) {
-            if (srcStreamID in stream_to_client_map[srcID][srcCircID]) {
-                return stream_to_client_map[srcID][srcCircID][srcStreamID];
+function getStreamToSocketMapping(srcID, srcCircID, srcStreamID) {
+    if (srcID in stream_to_socket_map) {
+        if (srcCircID in stream_to_socket_map[srcID]) {
+            if (srcStreamID in stream_to_socket_map[srcID][srcCircID]) {
+                return stream_to_socket_map[srcID][srcCircID][srcStreamID];
             }
         }
     }
