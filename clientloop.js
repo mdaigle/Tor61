@@ -14,6 +14,7 @@ var net = require('net');
 var dns = require('dns');
 var date = new Date();
 var mapping = require('./mappings');
+var protocol = require('./protocol');
 
 //TODO: Calculate node id using tor utils and make it globally accessible.
 var nid = 1;
@@ -27,6 +28,7 @@ function getNewStreamID() {
     return stream_id_counter++;
 }
 
+//TODO: move below argument processing to main file. Set client facing port as a global.
 var args = process.argv.slice(2);
 if (args.length != 1) {
     console.log("Incorrect number of arguments.");
@@ -130,9 +132,9 @@ var server = net.createServer(function (clientSocket) {
                     // Assign on msg based upon connection type Connect vs Get
                     // each callback should have a static definition (?)
 
-                    var body = hostname + ":" + port + "\0";
+                    var body = new Buffer(hostname + ":" + port + "\0");
                     var relay_begin_cell = protocol.packRelay(circuit_id, stream_id, protocol.RELAY_BEGIN, body);
-                    console.log(relay_begin_cell);
+                    console.log(relay_begin_cell.toString());
                     // first_hop_socket.write(relay_begin_cell);
 
                     /*
