@@ -18,7 +18,7 @@ exports.RELAY_EXTENDED = RELAY_EXTENDED = 7;
 exports.RELAY_BEGIN_FAILED  = RELAY_BEGIN_FAILED = 11;
 exports.RELAY_EXTEND_FAILED = RELAY_EXTEND_FAILED = 12;
 
-exports.packMainFields = function(circuit_id, command, message_buffer) {
+exports.packMainFields = packMainFields = function(circuit_id, command, message_buffer) {
     message_buffer = message_buffer || new Buffer(512);
 
     message_buffer.writeUInt16BE(circuit_id, 0);
