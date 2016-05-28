@@ -15,6 +15,8 @@ var dns = require('dns');
 var date = new Date();
 var mapping = require('./mappings');
 
+//TODO: Calculate node id using tor utils and make it globally accessible.
+var nid = 1;
 //TODO: replace with actual first hop socket from circuit we create.
 var first_hop_socket = new net.Socket(); //placeholder
 //TODO: replace with actual circuit id
@@ -130,7 +132,8 @@ var server = net.createServer(function (clientSocket) {
 
                     var body = hostname + ":" + port + "\0";
                     var relay_begin_cell = protocol.packRelay(circuit_id, stream_id, protocol.RELAY_BEGIN, body);
-                    first_hop_socket.write(relay_begin_cell);
+                    console.log(relay_begin_cell);
+                    // first_hop_socket.write(relay_begin_cell);
 
                     /*
                     TODO: in main node loop, when we get a RELAY_CONNECTED,
@@ -142,54 +145,54 @@ var server = net.createServer(function (clientSocket) {
                         emitter.emit("relay_connected", circuitid, streamid)
                     */
 
+                    // Emitted when a RELAY_CONNECTED cell is received and we
+                    // are the final recipient.
                     emitter.on("relay_connected", (_circuit_id, _stream_id) => {
                         if (_circuit_id == circuit_id && _stream_id == stream_id)
                         {
-                                // This is the response for the stream we began
+                            // Map from identifiers to this socket so that
+                            // the main loop can route data cells coming
+                            // from the network.
+                            mappings.addStreamToSocketMapping(nid, _circuit_id, _stream_id, clientSocket);
+                            // This is the response for the stream we began
+                            //TODO: break up header before sending (if necessary)
+                            if (requestType == "CONNECT") {
                                 //TODO: send 200 to client here?
+                                var msg = "HTTP/1.1 200 OK\r\n\r\n";
+                                clientSocket.write(msg);
+                                first_hop_socket.on("error", function() {
+                                    // send 502 bad gateway
+                                    var msg = "HTTP/1.1 502 Bad Gateway\r\n\r\n";
+                                    clientSocket.write(msg, function() {
+                                        clientSocket.end();
+                                    });
+                                });
+                            } else {
+                                var modifiedHeader = buildHTTPHeader(requestLineComponents, optionMap);
+                                first_hop_socket.write(modifiedHeader + extraData);
+                            }
                                 // Resume listening for data on client socket so
                                 // that we can forward it along the new stream.
-                                clientSocket.resume();
+                            clientSocket.resume();
                         }
                     });
 
+                    // Emitted when a RELAY_BEGIN_FAILED cell is received and we
+                    // are the final recipient.
                     emitter.on("relay_begin_failed", (_circuit_id, _stream_id) => {
                         if (_circuit_id == circuit_id && _stream_id == stream_id)
                         {
                             // The stream we tried to begin could not be created.
-                            // TODO: send error message to client? or try again?
+                            // TODO: send error message to client? try again?
                             // For now, just close the client connection.
                             clientSocket.end();
                         }
                     });
-
-                    /*if (requestType == "CONNECT") {
-                        serverSocket.on("error", function() {
-                            // send 502 bad gateway
-                            var msg = "HTTP/1.1 502 Bad Gateway\r\n\r\n";
-                            clientSocket.write(msg, function() {
-                                clientSocket.end();
-                            });
-                        });
-                        //TODO: send 200 after stream creation?
-                        serverSocket.on("connect", function() {
-                            serverSocket.on('error', function() {
-                                clientSocket.end();
-                            });
-                            var msg = "HTTP/1.1 200 OK\r\n\r\n";
-                            clientSocket.write(msg);
-                        });
-                    } else {
-                        // forward modified header + data
-                        serverSocket.on("connect", function() {
-                            var modifiedHeader = buildHTTPHeader(requestLineComponents, optionMap);
-                            serverSocket.write(modifiedHeader + extraData);
-                        });
-                    }*/
                 }
             }
         } else {
             // Forward data along circuit
+            // 498 is 512 byte cell size minus 14 bytes for cell header.
             while (data.length > 498) {
                 var body = data.slice(0, 497);
                 var relay_data_cell = protocol.packRelay(circuit_id, stream_id, RELAY_DATA, body);
