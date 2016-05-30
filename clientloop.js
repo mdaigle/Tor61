@@ -2,6 +2,13 @@
 //  similar to proxy event loop
 //  once ready, map streamID->socket_out
 
+//TODO: Put this bit at the beginning of tor61 file.
+/*
+const EventEmitter = require("events").EventEmitter;
+global.emitter = new EventEmitter();
+clientloop = require("./clientloop.js");
+*/
+
 /*When a browser connects, the header of the HTTP request is processed to identify the ip:port of the web server.
 
     A stream number, S, that is not in use on the source router's circuit is chosen.
