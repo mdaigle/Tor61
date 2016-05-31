@@ -31,6 +31,22 @@ torNode.on('error', (err) => {
 
 server.listen(torNodePort); // can add callback
 
+/* Notes:
+ * Maybe we should connect to all routers so that the relay-extend
+ * time is shorter (and so we don't hit timeouts)
+ *
+ * The only times we have sequential control sequences is when opening
+ * a connection or a stream and then sending a create or data. 
+ * We can use the map mentioned above and should be on a per-socket basis
+ *
+ *
+ *
+ * We need a pending message response map which use the request/key
+ * components as a key and a callback function as the mapped value
+ * and then when we receive a response we can cancel the timeout
+ * and execute the callback
+ */
+
 // fetch list of all nodes
 var routerList = [];
 // determine circuit

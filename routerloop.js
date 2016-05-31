@@ -44,6 +44,7 @@ function socketSetup(socket) {
           // circuit successfully added the first router
           // Execute message queue?
           // add nodeToSocketMapping
+          // Or successfully added a new router
         case protocol.OPEN_FAILED:
           // connecting to a node failed
           // either need to send an extend failed (?) or we failed to connect to
