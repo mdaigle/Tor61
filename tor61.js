@@ -1,3 +1,11 @@
+var net = require('net');
+var dns = require('dns');
+var mapping = require('./mappings');
+var protocol = require('./protocol');
+var clientloop = require('./clientloop');
+var serverloop = require('./serverloop');
+var routerloop = require('./routerloop');
+
 // SETUP
 // Setup listening socket, but ignore requests until registered
 //  handlers
@@ -10,89 +18,10 @@ var nodeID = generateNodeID();
 var args = process.argv.slice(2);
 var torNodePort = args[0]; // CHANGE
 
+
 // need mapping from nodes -> sockets
-var torNode = net.createServer((socket) => { 
-// Event loop for internal sockets
-//   If end node for circuit, call to lib for sending to server.
-//   Either forward to server with existing connection
-//   or
-//   Create new connection to host
-//    dns lookup
-//    new socket
-//    callbacks => multiplex circID/socket etc.
-//  Forward all incoming data according to circuit map
-  var dataBuffer = Buffer.alloc(512, 0);
-  var bytesRead = 0;
-  socket.on('data', function (data) {
-    // buffer until 512 bytes
-    dataBuffer.append(data);
-    while (dataBuffer.length >= 512) {
-      // process message 
-      // slice out current msg
-      msg = dataBuffer.slice(0, 512);
-      // check command, handle appropriately
-      circID, command = unpackMainFields(msg);
-      if (command < 0 || command > 8) {
-        console.log("bad message");
-        return;
-      }
-      socketValidated = false;
-      otherNodeID = null;
-      msgFields = protocol.unpack(command, msg)
-      switch (command) {
-        // may need a concept of last msg sent or any outstanding circuit
-        // building/setup messages
-        case protocol.OPEN:
-          // assert destNodeID == nodeID
-          if (msgFields.destID != nodeID) {
-            protocol.sendOpenFailed(socket, msgFields.openerID, msgFields.destID);
-          // assert msgFields.openerID != self.nodeID
-          mappings.addNodeToSocketMapping(msgFields.openerID, socket);
-          protocol.sendOpened(socket, msgFields.openerID, msgFields.destID);
-          socketValidated = true;
-          openerID = msgFields.openerID;
-        case protocol.OPENED:
-          // circuit successfully added the first router
-          // Execute message queue?
-        case protocol.OPEN_FAILED:
-          // connecting to a node failed
-          // either need to send an extend failed (?) or we failed to connect to
-          // our first router
-        case protocol.CREATE:
-          // add mapping and send created
-          // M: This really should be srcID, destID, circID and should be keyed
-          // on circID
-          mappings.addCircuitMapping(otherNodeID, circID, nodeID, null);
-          protocol.sendCreated(socket, circID);
-        case protocol.CREATED:
-          // mapping successful
-          // Need a concept of outstanding messages with a specific node
-          // or do we?
-          mappings.addCircuitMapping(otherNodeID, circID, nodeID, null);
-        case protocol.CREATE_FAILED:
-          // we failed. Either send an extend failed OR we failed to connect to
-          // the first router in our circuit and need to restart 
-          // Need to know outstanding messages
-        case protocol.DESTROY:
-          
-        case protocol.RELAY:
-          //   If end node for circuit, call to lib for sending to server.
-          //   Either forward to server with existing connection
-          //   or
-          //   Create new connection to host
-          //    dns lookup
-          //    new socket
-          //    callbacks => multiplex circID/socket etc.
-          //  Forward all incoming data according to circuit map
- 
-      // processed dataBuffer
-      dataBuffer = Buffer.from(dataBuffer.slice(512, dataBuffer.length));
-    }
-  });   
-  socket.on('close', function() {
-    // teardown any pertinent circuits
-    //
-  });
+var torNode = net.createServer((socket) => {
+  routerloop.socketSetup(socket);
 });
 
 torNode.on('error', (err) => {
@@ -102,9 +31,50 @@ torNode.on('error', (err) => {
 
 server.listen(torNodePort); // can add callback
 
+/* Notes:
+ * Maybe we should connect to all routers so that the relay-extend
+ * time is shorter (and so we don't hit timeouts)
+ *
+ * The only times we have sequential control sequences is when opening
+ * a connection or a stream and then sending a create or data. 
+ * We can use the map mentioned above and should be on a per-socket basis
+ *
+ *
+ *
+ * We need a pending message response map which use the request/key
+ * components as a key and a callback function as the mapped value
+ * and then when we receive a response we can cancel the timeout
+ * and execute the callback
+ */
+
 // fetch list of all nodes
+var routerList = [];
 // determine circuit
-// connect to each node
+// choose first node and send Open/Create
+// THIS IS PSEUDOCODE
+function connectToRouter(rip,r port, rID) {
+  try {
+    currSocket = net.createConnection({host: rip, port: rport});
+    routerLoop.socketSetup(currSocket);
+    protocol.sendOpen(currSocket, nodeID, rID);
+    // we should block until we get an Opened or hit a timeout?
+  } catch(err) {
+    return null;
+  }
+}
+
+do{
+currRouter = routerList[random(0, routerList.length)];
+currSock = connectToRouter(currRouter.ip, currRouter.port, currRouter.id); 
+//
+protocol.sendCreate(socket, currCircID);
+}while(currSock == null);
+
+for (int i = 1; i < circLength; i ++) {
+  // same thing but pick a node and send relay extend
+  
+}
+
 
 
 // TEARDOWN
