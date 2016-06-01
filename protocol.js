@@ -29,6 +29,15 @@ exports.packMainFields = packMainFields = function(circuit_id, command, message_
     return message_buffer;
 }
 
+exports.unpackMainFields = function(message_buffer) {
+    _circuit_id = message_buffer.readUInt16BE(0);
+    _cell_type = message_buffer.readUInt8(2);
+    return {
+        circuit_id: _circuit_id,
+        cell_type: _cell_type
+    }
+}
+
 exports.packCreate = function(circuit_id) {
     return packMainFields(circuit_id, CREATE);
 }
@@ -51,6 +60,13 @@ exports.packOpen = function(sender_id, receiver_id) {
     return message_buffer;
 }
 
+exports.unpackOpen = function(message_buffer) {
+    var msg = unpackMainFields(message_buffer);
+    msg.opener_id = message_buffer.readUInt32BE(3);
+    msg.opened_id = message_buffer.readUInt32BE(7);
+    return msg;
+}
+
 exports.packOpened = function(sender_id, receiver_id) {
     message_buffer = new Buffer(512);
     message_buffer = packMainFields(0, OPENED, message_buffer);
@@ -62,6 +78,10 @@ exports.packOpened = function(sender_id, receiver_id) {
     return message_buffer;
 }
 
+exports.unpackOpened = function(message_buffer) {
+    return unpackOpen(message_buffer);
+}
+
 exports.packOpenFailed = function(sender_id, receiver_id) {
     message_buffer = new Buffer(512);
     message_buffer = packMainFields(0, OPEN_FAILED, message_buffer);
@@ -71,6 +91,10 @@ exports.packOpenFailed = function(sender_id, receiver_id) {
     message_buffer.writeUInt32BE(sender_id, 7);
 
     return message_buffer;
+}
+
+exports.unpackOpenFailed = function(message_buffer) {
+    return unpackOpen(message_buffer);
 }
 
 exports.packCreateFailed = function(circuit_id) {
@@ -93,6 +117,17 @@ exports.packRelay = function(circuit_id, stream_id, relay_command, body) {
     body.copy(message_buffer, 14, 0, body_length);
 
     return message_buffer;
+}
+
+exports.unpackRelay = function(message_buffer) {
+    var msg = unpackMainFields(message_buffer);
+
+    msg.stream_id = message_buffer.readUInt16BE(3);
+    msg.body_length = message_buffer.readUInt16BE(11);
+    msg.relay_command = message_buffer.readUInt8(13);
+    msg.body = message_buffer.slice(14, 14 + msg.body_length);
+
+    return msg;
 }
 
 Object.freeze(exports);
