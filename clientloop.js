@@ -151,13 +151,13 @@ var server = net.createServer(function (clientSocket) {
                     forward data on our new stream.
 
                     emit in the format:
-                        emitter.emit("relay_connected", circuitid, streamid)
+                        emitter.emit("relay_connected", streamid)
                     */
 
                     // Emitted when a RELAY_CONNECTED cell is received and we
                     // are the final recipient.
-                    emitter.on("relay_connected", (_circuit_id, _stream_id) => {
-                        if (_circuit_id == circuit_id && _stream_id == stream_id)
+                    emitter.on(stream_id, (relay_command)=> {
+                        if (relay_command == "relay_connected")
                         {
                             // Map from identifiers to this socket so that
                             // the main loop can route data cells coming
@@ -188,8 +188,8 @@ var server = net.createServer(function (clientSocket) {
 
                     // Emitted when a RELAY_BEGIN_FAILED cell is received and we
                     // are the final recipient.
-                    emitter.on("relay_begin_failed", (_circuit_id, _stream_id) => {
-                        if (_circuit_id == circuit_id && _stream_id == stream_id)
+                    emitter.on(stream_id, (relay_command) => {
+                        if (relay_command == "relay_begin_failed")
                         {
                             // The stream we tried to begin could not be created.
                             // TODO: send error message to client? try again?
