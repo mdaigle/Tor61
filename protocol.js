@@ -1,4 +1,4 @@
-exports.TIMEOUT = 4;
+exports.TIMEOUT = 4000;
 //TODO: send callbacks and timeouts need to clear socket message map entries
 
 // CELL-LEVEL COMMANDS
