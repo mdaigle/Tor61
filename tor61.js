@@ -1,3 +1,8 @@
+/* Notes:
+ * All send callbacks and timeouts need to clear socket msgMap entries
+ */
+
+
 var net = require('net');
 var dns = require('dns');
 var mapping = require('./mappings');
@@ -21,7 +26,7 @@ var torNodePort = args[0]; // CHANGE
 
 // need mapping from nodes -> sockets
 var torNode = net.createServer((socket) => {
-  routerloop.socketSetup(socket);
+  routerloop.socketSetup(socket, false);
 });
 
 torNode.on('error', (err) => {
@@ -47,35 +52,64 @@ server.listen(torNodePort); // can add callback
  * and execute the callback
  */
 
-// fetch list of all nodes
-var routerList = [];
-// determine circuit
-// choose first node and send Open/Create
 // THIS IS PSEUDOCODE
-function connectToRouter(rip,r port, rID) {
+function connectToRouter(rip, rport, rID) {
   try {
     currSocket = net.createConnection({host: rip, port: rport});
-    routerLoop.socketSetup(currSocket);
-    protocol.sendOpen(currSocket, nodeID, rID);
+    routerLoop.socketSetup(currSocket, true);
+    currSocket.msgMap[protocol.OPEN] = function(response) {
+      if (response == protocol.OPENED) {
+        // finish building the circuit
+        // function that sends relay extends
+      } else {
+        // destroy what we have and rebuild
+        //
+        buildCircuit()  
+      }
+    };
+    
+    protocol.sendOpen(currSocket, nodeID, rID,function() {
+        // destroy what we have and rebuild
+        //
+        buildCircuit()  
+      }
+    );
+    return currSocket
     // we should block until we get an Opened or hit a timeout?
   } catch(err) {
     return null;
   }
 }
 
-do{
-currRouter = routerList[random(0, routerList.length)];
-currSock = connectToRouter(currRouter.ip, currRouter.port, currRouter.id); 
-//
-protocol.sendCreate(socket, currCircID);
-}while(currSock == null);
-
+// fetch list of all nodes
+var routerList = [];
+// determine circuit
+// choose first node and send Open/Create
+function buildCircuit() {
+  do{
+    currRouter = routerList[random(0, routerList.length)];
+    currSock = connectToRouter(currRouter.ip, currRouter.port, currRouter.id); 
+    //
+    protocol.sendCreate(socket, currCircID);
+  }while(currSock == null);
+}
 for (int i = 1; i < circLength; i ++) {
   // same thing but pick a node and send relay extend
   
 }
 
-
+/*
+ * If routerList is empty and no other nodes exist,
+ * leave global circID null or some known self-constant
+ * When we call getCircuitMapping we should check
+ *
+ * Add base circuit mapping that is
+ * {srcID: ourNodeID, srcCircID: selfCircConst, dstID: null, dstCircID: null}
+ *
+ * ClientLoop should know when looping through self based upon BASE_CIRC_ID
+ * 
+ * When looping through self serverloop and clientloop should access streamID to
+ * socket and forward data, ignoring routerLoop. 
 
 // TEARDOWN
 //  Teardown circuit (send Destroy)
@@ -89,6 +123,7 @@ for (int i = 1; i < circLength; i ++) {
 //  each client connection should register their own listener for custom
 //  shutdown event
 //    close relevant in-scope sockets
+//  Relay_Connected & Relay_BeginFailed see comments in clientloop.js
 
 
 // Timeout handlers
@@ -96,11 +131,6 @@ for (int i = 1; i < circLength; i ++) {
 //    teardown (as much as possible)
 //    Attempt to rebuild circuit using fresh node list
 
-
-// Need function/mapping to multiplex sockets and circuits
-// CircID->node->socket
-//
-//client event loop
-
-
 // register with service
+//
+
