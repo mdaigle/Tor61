@@ -1,3 +1,6 @@
+exports.TIMEOUT = 4;
+//TODO: send callbacks and timeouts need to clear socket message map entries
+
 // CELL-LEVEL COMMANDS
 exports.CREATE = CREATE = 1;
 exports.CREATED = CREATED = 2;
@@ -18,7 +21,7 @@ exports.RELAY_EXTENDED = RELAY_EXTENDED = 7;
 exports.RELAY_BEGIN_FAILED  = RELAY_BEGIN_FAILED = 11;
 exports.RELAY_EXTEND_FAILED = RELAY_EXTEND_FAILED = 12;
 
-exports.packMainFields = packMainFields = function(circuit_id, command, message_buffer) {
+function packMainFields(circuit_id, command, message_buffer) {
     message_buffer = message_buffer || new Buffer(512);
 
     message_buffer.writeUInt16BE(circuit_id, 0);
@@ -38,19 +41,35 @@ exports.unpackMainFields = function(message_buffer) {
     }
 }
 
-exports.packCreate = function(circuit_id) {
+function packCreate(circuit_id) {
     return packMainFields(circuit_id, CREATE);
 }
 
-exports.packCreated = function(circuit_id) {
+exports.sendCreate = function(socket, circuit_id, callback) {
+    cell = packCreate(circuit_id);
+    socket.write(cell);
+    setTimeout(callback, TIMEOUT);
+}
+
+function packCreated(circuit_id) {
     return packMainFields(circuit_id, CREATED);
 }
 
-exports.packDestroy = function(circuit_id) {
+exports.sendCreated = function(socket, circuit_id) {
+    cell = packCreated(circuit_id);
+    socket.write(cell);
+}
+
+function packDestroy(circuit_id) {
     return packMainFields(circuit_id, DESTROY);
 }
 
-exports.packOpen = function(sender_id, receiver_id) {
+exports.sendDestroy = function(socket, circuit_id) {
+    cell = packDestroy(circuit_id);
+    socket.write(cell);
+}
+
+function packOpen(sender_id, receiver_id) {
     message_buffer = new Buffer(512);
     message_buffer = packMainFields(0, OPEN, message_buffer);
 
@@ -60,6 +79,12 @@ exports.packOpen = function(sender_id, receiver_id) {
     return message_buffer;
 }
 
+exports.sendOpen = function(socket, sender_id, receiver_id, callback) {
+    cell = packOpen(sender_id, receiver_id);
+    socket.write(cell);
+    setTimeout(callback, TIMEOUT);
+}
+
 exports.unpackOpen = function(message_buffer) {
     var msg = unpackMainFields(message_buffer);
     msg.opener_id = message_buffer.readUInt32BE(3);
@@ -67,7 +92,7 @@ exports.unpackOpen = function(message_buffer) {
     return msg;
 }
 
-exports.packOpened = function(sender_id, receiver_id) {
+function packOpened(sender_id, receiver_id) {
     message_buffer = new Buffer(512);
     message_buffer = packMainFields(0, OPENED, message_buffer);
 
@@ -78,11 +103,16 @@ exports.packOpened = function(sender_id, receiver_id) {
     return message_buffer;
 }
 
+exports.sendOpened = function(socket, sender_id, receiver_id) {
+    cell = packOpened(sender_id, receiver_id);
+    socket.write(cell);
+}
+
 exports.unpackOpened = function(message_buffer) {
     return unpackOpen(message_buffer);
 }
 
-exports.packOpenFailed = function(sender_id, receiver_id) {
+function packOpenFailed(sender_id, receiver_id) {
     message_buffer = new Buffer(512);
     message_buffer = packMainFields(0, OPEN_FAILED, message_buffer);
 
@@ -93,16 +123,26 @@ exports.packOpenFailed = function(sender_id, receiver_id) {
     return message_buffer;
 }
 
+exports.sendOpenFailed = function(socket, sender_id, receiver_id) {
+    cell = packOpenFailed(sender_id, receiver_id);
+    socket.write(cell);
+}
+
 exports.unpackOpenFailed = function(message_buffer) {
     return unpackOpen(message_buffer);
 }
 
-exports.packCreateFailed = function(circuit_id) {
+function packCreateFailed(circuit_id) {
     return packMainFields(circuit_id, CREATE_FAILED);
 }
 
+exports.sendCreateFailed = function(socket, circuit_id) {
+    cell = packCreateFailed(circuit_id);
+    socket.write(cell);
+}
+
 // Body parameter should be a buffer.
-exports.packRelay = function(circuit_id, stream_id, relay_command, body) {
+packRelay(circuit_id, stream_id, relay_command, body) {
     body_length = body.length;
     message_buffer = new Buffer(512);
 
@@ -117,6 +157,14 @@ exports.packRelay = function(circuit_id, stream_id, relay_command, body) {
     body.copy(message_buffer, 14, 0, body_length);
 
     return message_buffer;
+}
+
+exports.sendRelay = function(socket, circuit_id, stream_id, relay_command, body, callback) {
+    cell = packRelay(circuit_id, stream_id, relay_command, body);
+    socket.write(cell);
+    if (callback != null) {
+        setTimeout(callback, TIMEOUT);
+    }
 }
 
 exports.unpackRelay = function(message_buffer) {
