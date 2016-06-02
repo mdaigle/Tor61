@@ -7,6 +7,12 @@ exports.addNodeToSocketMapping = function(nid, socket) {
     node_to_socket_map[nid] = socket;
 }
 
+exports.removeNodeToSocketMapping = function(nid) {
+    if (nid in node_to_socket_map) {
+        delete node_to_socket_map[nid];
+    }
+}
+
 exports.getNodeToSocketMapping = function(nid) {
     return node_to_socket_map[nid];
 }
@@ -23,6 +29,16 @@ exports.addCircuitMapping = function(srcID, srcCircID, destID, destCircID) {
     circuit_map[destID][destCircID] = {nid:srcID, circid:srcCircID};
 }
 
+exports.removeCircuitMapping(nodeID, circID) {
+    if (nodeID in circuit_map) {
+        if (circID in circuit_map[nodeID]) {
+            delete circuit_map[nodeID][circID];
+        }
+        //throw "Trying to delete circuit_id that's not in the map";
+    }
+    //throw "Trying to delete circuit_id from a node that's not in the map";
+}
+
 exports.getCircuitMapping = function(srcID, srcCircID) {
     if (srcID in circuit_map) {
         if (srcCircID in circuit_map[srcID]) {
@@ -32,7 +48,7 @@ exports.getCircuitMapping = function(srcID, srcCircID) {
     return null;
 }
 
-exports.addStreamToStreamMapping = function(srcID, srcCircID, srcStreamID, destID, destCircID, destStreamID) {
+/*exports.addStreamToStreamMapping = function(srcID, srcCircID, srcStreamID, destID, destCircID, destStreamID) {
     if (exports.getCircuitMapping(srcID, srcCircID) == null) {
         throw "Trying to map stream to stream, but this is the last node in the circuit.";
     }
@@ -43,6 +59,16 @@ exports.addStreamToStreamMapping = function(srcID, srcCircID, srcStreamID, destI
     circuit_map[destID][destCircID][destStreamID] = srcStreamID;
 }
 
+exports.removeCircuitMapping(nodeID, circID) {
+    if (nodeID in circuit_map) {
+        if (circID in circuit_map[nodeID]) {
+            delete circuit_map[nodeID][circID];
+        }
+        throw "Trying to delete circuit_id that's not in the map";
+    }
+    throw "Trying to delete circuit_id from a node that's not in the map";
+}
+
 exports.getStreamToStreamMapping = function(srcID, srcCircID, srcStreamID) {
     if (exports.getCircuitMapping(srcID, srcCircID) == null) {
         throw "Trying to get stream to stream mapping, but we don't have an appropriate circuit mapping.";
@@ -51,7 +77,7 @@ exports.getStreamToStreamMapping = function(srcID, srcCircID, srcStreamID) {
         return circuit_map[srcID][srcCircID][srcStreamID];
     }
     return null;
-}
+}*/
 
 //TODO: DO WE NEED FOLLOWING TWO FUNCTIONS?
 /*function addStreamToHostMapping(srcID, srcCircID, srcStreamID, _host, _hostPort) {
