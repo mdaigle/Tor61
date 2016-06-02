@@ -1,3 +1,6 @@
+//A circuit that loops through us for each hop.
+exports.BASE_CIRC_ID = 0;
+
 var circuit_map = {};
 var stream_to_socket_map = {};
 var node_to_socket_map = {};
