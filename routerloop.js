@@ -119,17 +119,15 @@ function socketSetup(socket, createdByUs) {
             // yay end node
             switch (msgFields.relay_cmd) {
               case protocol.RELAY_BEGIN:
-                //   If end node for circuit, call to lib for sending to server.
-                //   Either forward to server with existing connection
-                //   or
-                //   Create new connection to host
-                //    dns lookup
-                //    new socket
-                //    callbacks => multiplex circID/socket etc.
-                //  Forward all incoming data according to circuit map
-
+                Promise(function(resolve, reject){
+                  serverloop.initiateConnection(msgFields, otherNodeID, circID);
+                }).then(function(){
+                  // TODO: send relay_connected
+                }).catch(function() {
+                  // TODO: send relay_begin_failed
+                });
               case protocol.RELAY_DATA:
-                // get streamID and find socket, forward data (if end node)
+                // get streamID and find socket, forward data
                 destSock = mappings.getStreamToSocketMapping(msgFields.stream_id);
                 if (destSock) {
                   destSock.write(msgFields.body);
