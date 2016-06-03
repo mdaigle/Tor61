@@ -1,5 +1,6 @@
 exports.TIMEOUT = 4000;
 //TODO: send callbacks and timeouts need to clear socket message map entries
+exports.MAX_BODY_SIZE = 498;
 
 // CELL-LEVEL COMMANDS
 exports.CREATE = CREATE = 1;
@@ -167,7 +168,7 @@ function packRelay(circuit_id, stream_id, relay_command, body) {
     return message_buffer;
 }
 
-exports.sendRelay = function(res, rej, socket, circuit_id, stream_id, relay_command, body) {  
+exports.sendRelay = function(res, rej, socket, circuit_id, stream_id, relay_command, body) {
   cell = packRelay(circuit_id, stream_id, relay_command, body);
   socket.write(cell);
   if (rej || res) {
