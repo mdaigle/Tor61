@@ -163,7 +163,7 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
         case protocol.RELAY:
           // check if end node
           destInfo = mappings.getCircuitMapping(otherNodeID, circID);
-          // TODO: add basecase circID -> null for our own circuit
+          // DONE: add basecase circID -> null for our own circuit
           if (destInfo.nid == null || destInfo.circid == null) {
             // yay end node
             switch (msgFields.relay_cmd) {
@@ -185,7 +185,7 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
 
               case protocol.RELAY_END:
                 // remove mappings, close socket to server
-                destSock = mappings.getStreamToSOcketMapping(msgFields.stream_id);
+                destSock = mappings.getStreamToSocketMapping(msgFields.stream_id);
                 // TODO: send event to streamID if malcolm wants
                 // TODO: streamIDs should be unique on a circuit
                 destSock.end();

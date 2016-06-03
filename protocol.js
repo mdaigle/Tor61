@@ -23,6 +23,7 @@ exports.RELAY_EXTEND_FAILED = RELAY_EXTEND_FAILED = 12;
 
 function packMainFields(circuit_id, command, message_buffer) {
     message_buffer = message_buffer || new Buffer(512);
+    message_buffer.fill(0);
 
     message_buffer.writeUInt16BE(circuit_id, 0);
     message_buffer.writeUInt8(command, 2);
@@ -71,6 +72,7 @@ exports.sendDestroy = function(socket, circuit_id) {
 
 function packOpen(sender_id, receiver_id) {
     message_buffer = new Buffer(512);
+    message_buffer.fill(0);
     message_buffer = packMainFields(0, OPEN, message_buffer);
 
     message_buffer.writeUInt32BE(sender_id, 3);
@@ -94,6 +96,7 @@ exports.unpackOpen = function(message_buffer) {
 
 function packOpened(sender_id, receiver_id) {
     message_buffer = new Buffer(512);
+    message_buffer.fill(0);
     message_buffer = packMainFields(0, OPENED, message_buffer);
 
     // Same as an open, so ids should stay in same order
@@ -114,6 +117,7 @@ exports.unpackOpened = function(message_buffer) {
 
 function packOpenFailed(sender_id, receiver_id) {
     message_buffer = new Buffer(512);
+    message_buffer.fill(0);
     message_buffer = packMainFields(0, OPEN_FAILED, message_buffer);
 
     // Same as an open, so ids should stay in same order
@@ -143,8 +147,10 @@ exports.sendCreateFailed = function(socket, circuit_id) {
 
 // Body parameter should be a buffer.
 function packRelay(circuit_id, stream_id, relay_command, body) {
-    body_length = body.length;
+    if (body == null) {body_length = 0;
+    } else { body_length = body.length; }
     message_buffer = new Buffer(512);
+    message_buffer.fill(0);
 
     message_buffer = packMainFields(circuit_id, RELAY, message_buffer);
 
@@ -154,7 +160,9 @@ function packRelay(circuit_id, stream_id, relay_command, body) {
     message_buffer.writeUInt16BE(body_length, 11);
     message_buffer.writeUInt8(relay_command, 13);
     // Copy body over to message buffer
-    body.copy(message_buffer, 14, 0, body_length);
+    if (body != null) {
+      body.copy(message_buffer, 14, 0, body_length);
+    }
 
     return message_buffer;
 }
