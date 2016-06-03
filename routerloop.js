@@ -25,23 +25,6 @@ var serverloop = require('./serverloop');
 //  sendRelay
 //
 // Timeout callback should be function(){rej();}
-exports.sendWithPromise = function(sendFunction, successCallback, failCallback) {
-  var ret = null;
-  var p = new Promise(function(resolve, reject) {
-    ret = sendFunction.bind(null, resolve, reject);
-  });
-  p.then(function(){
-    successCallback();
-  });
-  p.catch(function() {
-    failCallback();
-  });
-  return ret;
-}
-
-exports.sendWithoutPromise = function(sendFunction) {
-  return sendFunction.bind(null, undefined, undefined);
-}
 
 exports.socketSetup = function(socket, nodeID, createdByUs) {
   if (!createdByUs) {

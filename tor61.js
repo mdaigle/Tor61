@@ -99,32 +99,9 @@ server.listen(torNodePort); // can add callback
 // }
 
 // TODO:
-function openTorConnection(host, port, nodeID, receiverID, successCallback, failCallback) {
-  newSock = net.createConnection({host: host, port:port});
-  socketSetup(newSock, nodeID, true);
-  sendWithPromise(protocol.sendOpen, successCallback, failCallback)(newSock, nodeID, receiverID);
-}
-
-function createTorCircuit(socket, nodeID, circID, successCallback, failCallback) {
-  sendWithPromise(protocol.sendCreate, successCallback, failCallback)(socket, circID);
-}
-// TODO: pack and unpack fn for body of extend and begin
-
-// TODO:
-function extendTorConnection(socket, host, port, nodeID, receiverID, circID, successCallback, failCallback) {
-  var bodyBuf = packExtendBody(host, port, receiverID);
-  sendWithPromise(protocol.sendRelay, successCallback, failCallback)(socket, circID, 0, protocol.RELAY_EXTEND, bodyBuf);
-}
-
-function createFirstHop(host, port, nodeID, receiverID, successCallback, failCallback) {
-  openSuccessCallback = function() {
-
-    createTorCircuit(, successCallback, failCallback);
-  }
-  openTorConnection(, openSuccessCallback, failCallback);
-}
-
 function buildCircuit() {
+
+    //Call fetch, do other stuff in its callback
   failCallback = function() {
     // tear down the circuit
     // try to rebuild
