@@ -18,6 +18,8 @@ function socketSetup(socket, createdByUs) {
     }
   }
   var msgMap = {};
+  // TODO: For msg map need to have individual ids  for relay msgs something
+  // like 10+relay_cmd
   socket["msgMap"] = msgMap;
   var dataBuffer = Buffer.alloc(512, 0);
   var bytesRead = 0;
@@ -37,7 +39,8 @@ function socketSetup(socket, createdByUs) {
       }
       socketValidated = false;
       otherNodeID = null;
-      msgFields = protocol.unpack(command, msg)
+      msgFields = protocol.unpack(command, msg);
+      // TODO: These should all check if socket is validated before handling
       switch (command) {
         // may need a concept of last msg sent or any outstanding circuit
         // building/setup messages
@@ -51,13 +54,18 @@ function socketSetup(socket, createdByUs) {
           // do we already have a mapping?
           mappings.addNodeToSocketMapping(msgFields.openerID, socket);
           protocol.sendOpened(socket, msgFields.openerID, msgFields.destID);
-          socketValidated = true;
+          if (!createdByUs) {
+            socketValidated = true;
+          }
           openerID = msgFields.openerID;
 
         case protocol.OPENED:
           // circuit successfully added the first router
           // add nodeToSocketMapping
           // Or successfully added a new router
+          if (createdByUs) {
+            socketValidated = true;
+          }
           if (protocol.OPEN in msgMap && msgMap[protocol.OPEN] != null) {
             msgMap[protocol.OPEN](protocol.OPENED);
             msgMap[protocol.OPEN] = null;
@@ -105,15 +113,57 @@ function socketSetup(socket, createdByUs) {
           mappings.removeCircuitMapping(otherNodeID, circID);
 
         case protocol.RELAY:
-          //   If end node for circuit, call to lib for sending to server.
-          //   Either forward to server with existing connection
-          //   or
-          //   Create new connection to host
-          //    dns lookup
-          //    new socket
-          //    callbacks => multiplex circID/socket etc.
-          //  Forward all incoming data according to circuit map
+          // check if end node
+          destInfo = mappings.getCircuitMapping(otherNodeID, circID);
+          if (destInfo.nid == null || destInfo.circid == null) {
+            // yay end node
+            switch (msgFields.relay_cmd) {
+              case protocol.RELAY_BEGIN:
+                //   If end node for circuit, call to lib for sending to server.
+                //   Either forward to server with existing connection
+                //   or
+                //   Create new connection to host
+                //    dns lookup
+                //    new socket
+                //    callbacks => multiplex circID/socket etc.
+                //  Forward all incoming data according to circuit map
 
+              case protocol.RELAY_DATA:
+                // get streamID and find socket, forward data (if end node)
+                destSock = mappings.getStreamToSocketMapping(msgFields.stream_id);
+                if (destSock) {
+                  destSock.write(msgFields.body);
+                }
+
+              case protocol.RELAY_END:
+                // remove mappings, close socket to server
+                destSock = mappings.getStreamToSOcketMapping(msgFields.stream_id);
+                // send event to streamID
+                destSock.end();
+                mappings.removeStreamToSocketMapping(msgFields.stream_id);
+              
+              case protocol.RELAY_CONNECTED:
+                // send event to streamID
+
+              case protocol.RELAY_EXTEND:
+                // create connection to server as specified
+                
+
+              case protocol.RELAY_EXTENDED:
+                // execute callback
+
+              case protocol.RELAY_BEGIN_FAILED:
+                // close socket or server 404 etc.
+
+              case protocol.RELAY_EXTEND_FAILED:
+                // restart our socket building
+
+            }
+          } else {
+            dstSock = mappings.getNodeToSocketMapping(destInfo.nid);
+            // TODO: Fill out according to send msg
+            protocol.sendRelay(dstSock, msgFields);
+          }
       } 
       // processed dataBuffer
       dataBuffer = Buffer.from(dataBuffer.slice(512, dataBuffer.length));
