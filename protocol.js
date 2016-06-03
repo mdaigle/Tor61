@@ -144,7 +144,7 @@ exports.sendCreateFailed = function(socket, circuit_id) {
 }
 
 // Body parameter should be a buffer.
-packRelay(circuit_id, stream_id, relay_command, body) {
+function packRelay(circuit_id, stream_id, relay_command, body) {
     body_length = body.length;
     message_buffer = new Buffer(512);
 
