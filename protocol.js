@@ -49,7 +49,7 @@ exports.sendCreate = function(res, rej, socket, circuit_id) {
     cell = packCreate(circuit_id);
     socket.write(cell);
     socket.msgMap[protocol.CREATE] = {resolve: res, reject: rej};
-    setTimeout(function(){reject();}, TIMEOUT);
+    setTimeout(function(){rej();}, TIMEOUT);
 }
 
 function packCreated(circuit_id) {
@@ -84,7 +84,7 @@ exports.sendOpen = function(res, rej, socket, sender_id, receiver_id) {
     cell = packOpen(sender_id, receiver_id);
     socket.write(cell);
     socket.msgMap[protocol.OPEN] = {resolve: res, reject: rej}
-    setTimeout(function(){reject();}, TIMEOUT);
+    setTimeout(function(){rej();}, TIMEOUT);
 }
 
 exports.unpackOpen = function(message_buffer) {
