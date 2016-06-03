@@ -11,9 +11,16 @@
 //
 //  
 //
-Buffer = require('buffer');
+//
+// TODO: send function is not storing timeouts. Need to add to msgMap and then
+// cancel it when we get the correct response
+var Buffer = require('buffer');
+var net = require('net');
+var mappings = require('./mappings');
+var protocol = require('./protocol');
+var serverloop = require('./serverloop');
 
-function socketSetup(socket, createdByUs) {
+function socketSetup(socket, nodeID, createdByUs) {
   if (!createdByUs) {
     openTimeout = setTimeout(protocol.MSGTIMEOUT, function() {
       socket.end();
@@ -118,16 +125,18 @@ function socketSetup(socket, createdByUs) {
         case protocol.RELAY:
           // check if end node
           destInfo = mappings.getCircuitMapping(otherNodeID, circID);
+          // TODO: add basecase circID -> null for our own circuit
           if (destInfo.nid == null || destInfo.circid == null) {
             // yay end node
             switch (msgFields.relay_cmd) {
               case protocol.RELAY_BEGIN:
-                Promise(function(resolve, reject){
+                (new Promise(function(resolve, reject){
                   serverloop.initiateConnection(msgFields, otherNodeID, circID);
-                }).then(function(){
-                  // TODO: send relay_connected
+                })).then(function(){
+                  // TODO: modify send Relay to allow null data
+                  protocol.sendRelay(socket, circID, msgFields.stream_id, protocol.RELAY_CONNECTED, null);
                 }).catch(function() {
-                  // TODO: send relay_begin_failed
+                  protocol.sendRelay(socket, circID, msgFields.stream_id, protocol.RELAY_BEGIN_FAILED, null);
                 });
               case protocol.RELAY_DATA:
                 // get streamID and find socket, forward data
@@ -139,22 +148,37 @@ function socketSetup(socket, createdByUs) {
               case protocol.RELAY_END:
                 // remove mappings, close socket to server
                 destSock = mappings.getStreamToSOcketMapping(msgFields.stream_id);
-                // send event to streamID
+                // TODO: send event to streamID if malcolm wants
+                // TODO: streamIDs should be unique on a circuit
                 destSock.end();
                 mappings.removeStreamToSocketMapping(msgFields.stream_id);
               
               case protocol.RELAY_CONNECTED:
-                // send event to streamID
+                // TODO: send event to streamID
+                // TODO: event emitter should multiplex nodeID/circID and
+                // streamID because streamIDs aren't unique globally
 
               case protocol.RELAY_EXTEND:
                 // create connection to server as specified
-                
+                // TODO: parse host and port
+                // TODO: we should partition this into another file
+                var newSock = net.createConnection({host: host, port: port});
+                this.socketSetup(newSock, nodeID, true);
+                newSock.msgMap[protocol.OPEN] = function(response) {
+                  if (response == protocol.OPENED) {
+                    // send create
+                  } else {
+                    // return relay_extend_failed
+                  }
+                };
+                // TODO: send Open with timeout that returns relay_extend_failed
 
               case protocol.RELAY_EXTENDED:
                 // execute callback
 
               case protocol.RELAY_BEGIN_FAILED:
                 // close socket or server 404 etc.
+                // TODO: send event to streamID
 
               case protocol.RELAY_EXTEND_FAILED:
                 // restart our socket building
@@ -163,7 +187,7 @@ function socketSetup(socket, createdByUs) {
           } else {
             dstSock = mappings.getNodeToSocketMapping(destInfo.nid);
             // TODO: Fill out according to send msg
-            protocol.sendRelay(dstSock, msgFields);
+            protocol.sendRelay(dstSock, destInfo.circid, msgFields.stream_id, msgFields.relay_command, msgFields.body);
           }
       } 
       // processed dataBuffer

@@ -26,7 +26,7 @@ var torNodePort = args[0]; // CHANGE
 
 // need mapping from nodes -> sockets
 var torNode = net.createServer((socket) => {
-  routerloop.socketSetup(socket, false);
+  routerloop.socketSetup(socket, nodeID, false);
 });
 
 torNode.on('error', (err) => {
@@ -56,7 +56,7 @@ server.listen(torNodePort); // can add callback
 function connectToRouter(rip, rport, rID) {
   try {
     currSocket = net.createConnection({host: rip, port: rport});
-    routerLoop.socketSetup(currSocket, true);
+    routerLoop.socketSetup(currSocket, nodeID, true);
     currSocket.msgMap[protocol.OPEN] = function(response) {
       if (response == protocol.OPENED) {
         // finish building the circuit

@@ -7,7 +7,7 @@
 require('buffer');
 require('dns');
   
-function initiateConnection(msgFields, otherNodeID, circID, resolve, reject) {
+exports.initiateConnection = function(msgFields, otherNodeID, circID, resolve, reject) {
   var addrStr = parseString(msgFields.body);
   var streamID = msgFields.stream_id;
   var addrSplit = addrStr.split(":");
