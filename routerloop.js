@@ -12,8 +12,6 @@
 //  
 //
 //
-// TODO: send function is not storing timeouts. Need to add to msgMap and then
-// cancel it when we get the correct response
 var Buffer = require('buffer');
 var net = require('net');
 var mappings = require('./mappings');
@@ -27,7 +25,7 @@ var serverloop = require('./serverloop');
 //  sendRelay
 //
 // Timeout callback should be function(){rej();}
-function sendWithPromise(sendFunction, successCallback, failCallback) {
+exports.sendWithPromise = function(sendFunction, successCallback, failCallback) {
   var ret = null;
   var p = new Promise(function(resolve, reject) {
     ret = sendFunction.bind(null, resolve, reject);
@@ -41,26 +39,28 @@ function sendWithPromise(sendFunction, successCallback, failCallback) {
   return ret;
 }
 
-function sendWithoutPromise(sendFunction) {
+exports.sendWithoutPromise = function(sendFunction) {
   return sendFunction.bind(null, undefined, undefined);
 }
 
+// TODO:
 function initiateTorConnection(host, port, nodeID) {
   newSock = net.createConnection({host: host, port:port});
   this.socketSetup(newSock, nodeID, true); 
-  sendWithPromise(protocol.sendOpen, successCallback, failCallback)(
+  //sendWithPromise(protocol.sendOpen, successCallback, failCallback)(
 
 }
 
-function socketSetup(socket, nodeID, createdByUs) {
+exports.socketSetup = function(socket, nodeID, createdByUs) {
   if (!createdByUs) {
-    openTimeout = setTimeout(protocol.MSGTIMEOUT, function() {
+    openTimeout = setTimeout(function() {
       socket.end();
-    }
+    }, protocol.TIMEOUT);
   }
   var msgMap = {};
-  // TODO: For msg map need to have individual ids  for relay msgs something
-  // like 10+relay_cmd
+  msgMap[protocol.OPEN] = msgMap[protocol.CREATE] = msgMap[protocol.RELAY] = {};
+  msgMap[protocol.RELAY][protocol.RELAY_BEGIN] = msgMap[protocol.RELAY][protocol.EXTEND] = {};
+  // each entry should be {resolve: , reject:, timeout:}
   socket["msgMap"] = msgMap;
   var dataBuffer = new Buffer(0);
   var bytesRead = 0;
@@ -108,8 +108,9 @@ function socketSetup(socket, nodeID, createdByUs) {
           if (createdByUs) {
             socketValidated = true;
           }
-          if (protocol.OPEN in msgMap && msgMap[protocol.OPEN) != null {
+          if (protocol.OPEN in msgMap && msgMap[protocol.OPEN] != null) {
             msgMap[protocol.OPEN].resolve();
+            clearTimeout(msgMap[protocol.OPEN].timeout);
             msgMap[protocol.OPEN] = null;
           }
 
@@ -119,6 +120,7 @@ function socketSetup(socket, nodeID, createdByUs) {
           // our first router
           if (protocol.OPEN in msgMap && msgMap[protocol.OPEN] != null) {
             msgMap[protocol.OPEN].reject();
+            clearTimeout(msgMap[protocol.OPEN].timeout);
             msgMap[protocol.OPEN] = null;
           }
 
@@ -136,6 +138,7 @@ function socketSetup(socket, nodeID, createdByUs) {
           mappings.addCircuitMapping(otherNodeID, circID, null, null);
           if (protocol.CREATE in msgMap && msgMap[protocol.CREATE] != null) {
             msgMap[protocol.CREATE].resolve();
+            clearTimeout(msgMap[protocol.CREATE].timeout);
             msgMap[protocol.CREATE] = null;
           }
 
@@ -145,6 +148,7 @@ function socketSetup(socket, nodeID, createdByUs) {
           // Need to know outstanding messages
           if (protocol.CREATE in msgMap && msgMap[protocol.CREATE] != null) {
             msgMap[protocol.CREATE].reject();
+            clearTimeout(msgMap[protocol.CREATE].timeout);
             msgMap[protocol.CREATE] = null;
           }
 
@@ -189,8 +193,9 @@ function socketSetup(socket, nodeID, createdByUs) {
                 // TODO: send event to streamID
                 // TODO: event emitter should multiplex nodeID/circID and
                 // streamID because streamIDs aren't unique globally
-                if (msgMap[protocol.RELAY][protocol.RELAY_BEGIN]) {
-                  msgMap[protocl.RELAY][protocol.RELAY_BEGIN].resolve();
+                if (msgMap[protocol.RELAY][protocol.RELAY_BEGIN][msgFields.stream_id]) {
+                  msgMap[protocl.RELAY][protocol.RELAY_BEGIN][msgFields.stream_id].resolve();
+                  clearTimeout(msgMap[protocol.RELAY][protocol.RELAY_BEGIN][msgFields.stream_id].timeout);
                 }
 
               case protocol.RELAY_EXTEND:
@@ -210,21 +215,24 @@ function socketSetup(socket, nodeID, createdByUs) {
 
               case protocol.RELAY_EXTENDED:
                 // execute callback
-                if (msgMap[protocol.RELAY][protocol.RELAY_EXTEND]) {
-                  msgMap[protocol.RELAY][protocol.RELAY_EXTEND].resolve();
+                if (msgMap[protocol.RELAY][protocol.RELAY_EXTEND][msgFields.stream_id]) {
+                  msgMap[protocol.RELAY][protocol.RELAY_EXTEND][msgFields.stream_id].resolve();
+                  clearTimeout(msgMap[protocol.RELAY][protocol.RELAY_EXTEND][msgFields.stream_id].timeout);
                 }
 
               case protocol.RELAY_BEGIN_FAILED:
                 // close socket or server 404 etc.
                 // TODO: send event to streamID
-                if (msgMap[protocol.RELAY][protocol.RELAY_BEGIN]) {
-                  msgMap[protocol.RELAY][protocol.RELAY_BEGIN].reject();
+                if (msgMap[protocol.RELAY][protocol.RELAY_BEGIN][msgFields.stream_id]) {
+                  msgMap[protocol.RELAY][protocol.RELAY_BEGIN][msgFields.stream_id].reject();
+                  clearTimeout(msgMap[protocol.RELAY][protocol.RELAY_BEGIN][msgFields.stream_id].timeout)
                 }
 
               case protocol.RELAY_EXTEND_FAILED:
                 // restart our socket building
-                if (msgMap[protocol.RELAY][protocol.RELAY_EXTEND]) {
-                  msgMap[protocol.RELAY][protocol.RELAY_EXTEND].reject();
+                if (msgMap[protocol.RELAY][protocol.RELAY_EXTEND][msgFields.stream_id]) {
+                  msgMap[protocol.RELAY][protocol.RELAY_EXTEND][msgFields.stream_id].reject();
+                  clearTimeout(msgMap[protocol.RELAY][protocol.RELAY_EXTEND][msgFields.stream_id].timeout)
                 }
 
             }
