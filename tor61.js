@@ -7,7 +7,7 @@ var net = require('net');
 var dns = require('dns');
 var mapping = require('./mappings');
 var protocol = require('./protocol');
-var clientloop = require('./clientloop');
+// var clientloop = require('./clientloop'); ??????????????
 var serverloop = require('./serverloop');
 var routerloop = require('./routerloop');
 

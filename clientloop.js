@@ -1,3 +1,6 @@
+// TODO: Malcolm, do all send functions using
+// routerloop.sendWithPromise/sendWithoutPromise(protocol.sendRelay)
+
 // Event loop for client socket
 //  similar to proxy event loop
 //  once ready, map streamID->socket_out

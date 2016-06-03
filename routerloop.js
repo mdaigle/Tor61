@@ -44,12 +44,14 @@ exports.sendWithoutPromise = function(sendFunction) {
 }
 
 // TODO:
-function initiateTorConnection(host, port, nodeID) {
+function openTorConnection(host, port, nodeID, receiverID, successCallback, failCallback) {
   newSock = net.createConnection({host: host, port:port});
-  this.socketSetup(newSock, nodeID, true); 
-  //sendWithPromise(protocol.sendOpen, successCallback, failCallback)(
-
+  socketSetup(newSock, nodeID, true); 
+  sendWithPromise(protocol.sendOpen, successCallback, failCallback)(newSock, nodeID, receiverID);
 }
+
+// TODO:
+// function extendTorConnection(host, port, nodeID, receiverID
 
 exports.socketSetup = function(socket, nodeID, createdByUs) {
   if (!createdByUs) {
