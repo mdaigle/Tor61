@@ -41,7 +41,7 @@ server.listen(torNodePort); // can add callback
  * time is shorter (and so we don't hit timeouts)
  *
  * The only times we have sequential control sequences is when opening
- * a connection or a stream and then sending a create or data. 
+ * a connection or a stream and then sending a create or data.
  * We can use the map mentioned above and should be on a per-socket basis
  *
  *
@@ -53,49 +53,87 @@ server.listen(torNodePort); // can add callback
  */
 
 // THIS IS PSEUDOCODE
-function connectToRouter(rip, rport, rID) {
-  try {
-    currSocket = net.createConnection({host: rip, port: rport});
-    routerLoop.socketSetup(currSocket, nodeID, true);
-    currSocket.msgMap[protocol.OPEN] = function(response) {
-      if (response == protocol.OPENED) {
-        // finish building the circuit
-        // function that sends relay extends
-      } else {
-        // destroy what we have and rebuild
-        //
-        buildCircuit()  
-      }
-    };
-    
-    protocol.sendOpen(currSocket, nodeID, rID,function() {
-        // destroy what we have and rebuild
-        //
-        buildCircuit()  
-      }
-    );
-    return currSocket
-    // we should block until we get an Opened or hit a timeout?
-  } catch(err) {
-    return null;
-  }
+// function connectToRouter(rip, rport, rID) {
+//   try {
+//     currSocket = net.createConnection({host: rip, port: rport});
+//     routerLoop.socketSetup(currSocket, nodeID, true);
+//     currSocket.msgMap[protocol.OPEN] = function(response) {
+//       if (response == protocol.OPENED) {
+//         // finish building the circuit
+//         // function that sends relay extends
+//       } else {
+//         // destroy what we have and rebuild
+//         //
+//         buildCircuit()
+//       }
+//     };
+//
+//     protocol.sendOpen(currSocket, nodeID, rID,function() {
+//         // destroy what we have and rebuild
+//         //
+//         buildCircuit()
+//       }
+//     );
+//     return currSocket
+//     // we should block until we get an Opened or hit a timeout?
+//   } catch(err) {
+//     return null;
+//   }
+// }
+//
+// // fetch list of all nodes
+// var routerList = [];
+// // determine circuit
+// // choose first node and send Open/Create
+// function buildCircuit() {
+//   do{
+//     currRouter = routerList[random(0, routerList.length)];
+//     currSock = connectToRouter(currRouter.ip, currRouter.port, currRouter.id);
+//     //
+//     protocol.sendCreate(socket, currCircID);
+//   }while(currSock == null);
+// }
+// for (int i = 1; i < circLength; i ++) {
+//   // same thing but pick a node and send relay extend
+//
+// }
+
+// TODO:
+function openTorConnection(host, port, nodeID, receiverID, successCallback, failCallback) {
+  newSock = net.createConnection({host: host, port:port});
+  socketSetup(newSock, nodeID, true);
+  sendWithPromise(protocol.sendOpen, successCallback, failCallback)(newSock, nodeID, receiverID);
 }
 
-// fetch list of all nodes
-var routerList = [];
-// determine circuit
-// choose first node and send Open/Create
-function buildCircuit() {
-  do{
-    currRouter = routerList[random(0, routerList.length)];
-    currSock = connectToRouter(currRouter.ip, currRouter.port, currRouter.id); 
-    //
-    protocol.sendCreate(socket, currCircID);
-  }while(currSock == null);
+function createTorCircuit(socket, nodeID, circID, successCallback, failCallback) {
+  sendWithPromise(protocol.sendCreate, successCallback, failCallback)(socket, circID);
 }
-for (int i = 1; i < circLength; i ++) {
-  // same thing but pick a node and send relay extend
-  
+// TODO: pack and unpack fn for body of extend and begin
+
+// TODO:
+function extendTorConnection(socket, host, port, nodeID, receiverID, circID, successCallback, failCallback) {
+  var bodyBuf = packExtendBody(host, port, receiverID);
+  sendWithPromise(protocol.sendRelay, successCallback, failCallback)(socket, circID, 0, protocol.RELAY_EXTEND, bodyBuf);
+}
+
+function createFirstHop(host, port, nodeID, receiverID, successCallback, failCallback) {
+  openSuccessCallback = function() {
+
+    createTorCircuit(, successCallback, failCallback);
+  }
+  openTorConnection(, openSuccessCallback, failCallback);
+}
+
+function buildCircuit() {
+  failCallback = function() {
+    // tear down the circuit
+    // try to rebuild
+  }
+  successCallback = function() {
+    extendTorConnection(,
+
+  }
+  createFirstHop()
 }
 
 /*
@@ -107,9 +145,9 @@ for (int i = 1; i < circLength; i ++) {
  * {srcID: ourNodeID, srcCircID: selfCircConst, dstID: null, dstCircID: null}
  *
  * ClientLoop should know when looping through self based upon BASE_CIRC_ID
- * 
+ *
  * When looping through self serverloop and clientloop should access streamID to
- * socket and forward data, ignoring routerLoop. 
+ * socket and forward data, ignoring routerLoop.
 
 // TEARDOWN
 //  Teardown circuit (send Destroy)
@@ -133,4 +171,3 @@ for (int i = 1; i < circLength; i ++) {
 
 // register with service
 //
-

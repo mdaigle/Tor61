@@ -9,7 +9,7 @@
 //
 //  Implement Global Event Emitter usage keyed on streamID
 //
-//  
+//
 //
 //
 var Buffer = require('buffer');
@@ -43,45 +43,6 @@ exports.sendWithoutPromise = function(sendFunction) {
   return sendFunction.bind(null, undefined, undefined);
 }
 
-// TODO:
-function openTorConnection(host, port, nodeID, receiverID, successCallback, failCallback) {
-  newSock = net.createConnection({host: host, port:port});
-  socketSetup(newSock, nodeID, true); 
-  sendWithPromise(protocol.sendOpen, successCallback, failCallback)(newSock, nodeID, receiverID);
-}
-
-function createTorCircuit(socket, nodeID, circID, successCallback, failCallback) {
-  sendWithPromise(protocol.sendCreate, successCallback, failCallback)(socket, circID);
-}
-// TODO: pack and unpack fn for body of extend and begin
-
-// TODO:
-function extendTorConnection(socket, host, port, nodeID, receiverID, circID, successCallback, failCallback) {
-  var bodyBuf = packExtendBody(host, port, receiverID);
-  sendWithPromise(protocol.sendRelay, successCallback, failCallback)(socket, circID, 0, protocol.RELAY_EXTEND, bodyBuf);
-}
-
-function createFirstHop(,successCallback, failCallback) {
-  openSuccessCallback = function() {
-     
-    createTorCircuit(, successCallback, failCallback); 
-  }
-  openTorConnection(, openSuccessCallback, failCallback);
-}
-
-function buildCircuit() {
-  failCallback = function() {
-    // tear down the circuit
-    // try to rebuild
-  }
-  successCallback = function() {
-    extendTorConnection(, 
-
-  }
-  createFirstHop()
-}
-
-
 exports.socketSetup = function(socket, nodeID, createdByUs) {
   if (!createdByUs) {
     openTimeout = setTimeout(function() {
@@ -101,7 +62,7 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
     // dataBuffer.append(data);
     dataBuffer = Buffer.concat([dataBuffer, data]);
     while (dataBuffer.length >= 512) {
-      // process message 
+      // process message
       // slice out current msg
       msg = dataBuffer.slice(0, 512);
       // check command, handle appropriately
@@ -175,7 +136,7 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
 
         case protocol.CREATE_FAILED:
           // we failed. Either send an extend failed OR we failed to connect to
-          // the first router in our circuit and need to restart 
+          // the first router in our circuit and need to restart
           // Need to know outstanding messages
           if (protocol.CREATE in msgMap && msgMap[protocol.CREATE] != null) {
             msgMap[protocol.CREATE].reject();
@@ -218,7 +179,7 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
                 // TODO: streamIDs should be unique on a circuit
                 destSock.end();
                 mappings.removeStreamToSocketMapping(msgFields.stream_id);
-              
+
               case protocol.RELAY_CONNECTED:
                 // TODO: send event to streamID
                 // TODO: event emitter should multiplex nodeID/circID and
@@ -270,11 +231,11 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
             dstSock = mappings.getNodeToSocketMapping(destInfo.nid);
             sendWithoutPromise(protocol.sendRelay)(dstSock, destInfo.circid, msgFields.stream_id, msgFields.relay_command, msgFields.body);
           }
-      } 
+      }
       // processed dataBuffer
       dataBuffer = Buffer.from(dataBuffer.slice(512, dataBuffer.length));
     }
-  });   
+  });
   socket.on('close', function() {
     // teardown any pertinent
     if (otherNodeID != null) {
