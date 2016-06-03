@@ -50,8 +50,37 @@ function openTorConnection(host, port, nodeID, receiverID, successCallback, fail
   sendWithPromise(protocol.sendOpen, successCallback, failCallback)(newSock, nodeID, receiverID);
 }
 
+function createTorCircuit(socket, nodeID, circID, successCallback, failCallback) {
+  sendWithPromise(protocol.sendCreate, successCallback, failCallback)(socket, circID);
+}
+// TODO: pack and unpack fn for body of extend and begin
+
 // TODO:
-// function extendTorConnection(host, port, nodeID, receiverID
+function extendTorConnection(socket, host, port, nodeID, receiverID, circID, successCallback, failCallback) {
+  var bodyBuf = packExtendBody(host, port, receiverID);
+  sendWithPromise(protocol.sendRelay, successCallback, failCallback)(socket, circID, 0, protocol.RELAY_EXTEND, bodyBuf);
+}
+
+function createFirstHop(,successCallback, failCallback) {
+  openSuccessCallback = function() {
+     
+    createTorCircuit(, successCallback, failCallback); 
+  }
+  openTorConnection(, openSuccessCallback, failCallback);
+}
+
+function buildCircuit() {
+  failCallback = function() {
+    // tear down the circuit
+    // try to rebuild
+  }
+  successCallback = function() {
+    extendTorConnection(, 
+
+  }
+  createFirstHop()
+}
+
 
 exports.socketSetup = function(socket, nodeID, createdByUs) {
   if (!createdByUs) {
@@ -171,7 +200,6 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
                 (new Promise(function(resolve, reject){
                   serverloop.initiateConnection(msgFields, otherNodeID, circID);
                 })).then(function(){
-                  // TODO: modify send Relay to allow null data
                   sendWithoutPromise(protocol.sendRelay)(socket, circID, msgFields.stream_id, protocol.RELAY_CONNECTED, null);
                 }).catch(function() {
                   sendWithoutPromise(protocol.sendRelay)(socket, circID, msgFields.stream_id, protocol.RELAY_BEGIN_FAILED, null);
@@ -240,7 +268,6 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
             }
           } else {
             dstSock = mappings.getNodeToSocketMapping(destInfo.nid);
-            // TODO: Fill out according to send msg
             sendWithoutPromise(protocol.sendRelay)(dstSock, destInfo.circid, msgFields.stream_id, msgFields.relay_command, msgFields.body);
           }
       } 
