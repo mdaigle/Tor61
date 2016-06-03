@@ -20,6 +20,34 @@ var mappings = require('./mappings');
 var protocol = require('./protocol');
 var serverloop = require('./serverloop');
 
+
+// Note: send functions that should use this include:
+//  sendCreate
+//  sendOpen
+//  sendRelay
+//
+// Timeout callback should be function(){rej();}
+function sendWithPromise(sendFunction, successCallback, failCallback) {
+  var ret = null;
+  var p = new Promise(function(resolve, reject) {
+    ret = sendFunction.bind(null, resolve, reject);
+  });
+  p.then(function(){
+    successCallback();
+  });
+  p.catch(function() {
+    failCallback();
+  });
+  return ret;
+}
+
+function initiateTorConnection(host, port, nodeID) {
+  newSock = net.createConnection({host: host, port:port});
+  this.socketSetup(newSock, nodeID, true); 
+  sendWithPromise(protocol.sendOpen, successCallback, failCallback)(
+
+}
+
 function socketSetup(socket, nodeID, createdByUs) {
   if (!createdByUs) {
     openTimeout = setTimeout(protocol.MSGTIMEOUT, function() {

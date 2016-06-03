@@ -45,7 +45,7 @@ function packCreate(circuit_id) {
     return packMainFields(circuit_id, CREATE);
 }
 
-exports.sendCreate = function(socket, circuit_id, callback) {
+exports.sendCreate = function(res, rej, socket, circuit_id, callback) {
     cell = packCreate(circuit_id);
     socket.write(cell);
     setTimeout(callback, TIMEOUT);
@@ -79,7 +79,7 @@ function packOpen(sender_id, receiver_id) {
     return message_buffer;
 }
 
-exports.sendOpen = function(socket, sender_id, receiver_id, callback) {
+exports.sendOpen = function(res, rej, socket, sender_id, receiver_id, callback) {
     cell = packOpen(sender_id, receiver_id);
     socket.write(cell);
     setTimeout(callback, TIMEOUT);
@@ -159,11 +159,12 @@ packRelay(circuit_id, stream_id, relay_command, body) {
     return message_buffer;
 }
 
-exports.sendRelay = function(socket, circuit_id, stream_id, relay_command, body, callback) {
+exports.sendRelay = function(res, rej, socket, circuit_id, stream_id, relay_command, body, callback) {
     cell = packRelay(circuit_id, stream_id, relay_command, body);
     socket.write(cell);
-    if (callback != null) {
-        setTimeout(callback, TIMEOUT);
+    if (rej) {
+      // TODO: set msgMap to res/rej
+      setTimeout(function(){rej();}, TIMEOUT);
     }
 }
 
