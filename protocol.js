@@ -45,10 +45,11 @@ function packCreate(circuit_id) {
     return packMainFields(circuit_id, CREATE);
 }
 
-exports.sendCreate = function(res, rej, socket, circuit_id, callback) {
+exports.sendCreate = function(res, rej, socket, circuit_id) {
     cell = packCreate(circuit_id);
     socket.write(cell);
-    setTimeout(callback, TIMEOUT);
+    socket.msgMap[protocol.CREATE] = {resolve: res, reject: rej};
+    setTimeout(function(){reject();}, TIMEOUT);
 }
 
 function packCreated(circuit_id) {
@@ -79,10 +80,11 @@ function packOpen(sender_id, receiver_id) {
     return message_buffer;
 }
 
-exports.sendOpen = function(res, rej, socket, sender_id, receiver_id, callback) {
+exports.sendOpen = function(res, rej, socket, sender_id, receiver_id) {
     cell = packOpen(sender_id, receiver_id);
     socket.write(cell);
-    setTimeout(callback, TIMEOUT);
+    socket.msgMap[protocol.OPEN] = {resolve: res, reject: rej}
+    setTimeout(function(){reject();}, TIMEOUT);
 }
 
 exports.unpackOpen = function(message_buffer) {
@@ -159,13 +161,13 @@ packRelay(circuit_id, stream_id, relay_command, body) {
     return message_buffer;
 }
 
-exports.sendRelay = function(res, rej, socket, circuit_id, stream_id, relay_command, body, callback) {
-    cell = packRelay(circuit_id, stream_id, relay_command, body);
-    socket.write(cell);
-    if (rej) {
-      // TODO: set msgMap to res/rej
-      setTimeout(function(){rej();}, TIMEOUT);
-    }
+exports.sendRelay = function(res, rej, socket, circuit_id, stream_id, relay_command, body) {  
+  cell = packRelay(circuit_id, stream_id, relay_command, body);
+  socket.write(cell);
+  if (rej || res) {
+    socket.msgMap[protocol.RELAY][relay_command] = {resolve: res, reject: rej};
+    setTimeout(function(){rej();}, TIMEOUT);
+  }
 }
 
 exports.unpackRelay = function(message_buffer) {

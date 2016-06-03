@@ -41,6 +41,10 @@ function sendWithPromise(sendFunction, successCallback, failCallback) {
   return ret;
 }
 
+function sendWithoutPromise(sendFunction) {
+  return sendFunction.bind(null, undefined, undefined);
+}
+
 function initiateTorConnection(host, port, nodeID) {
   newSock = net.createConnection({host: host, port:port});
   this.socketSetup(newSock, nodeID, true); 
@@ -104,8 +108,8 @@ function socketSetup(socket, nodeID, createdByUs) {
           if (createdByUs) {
             socketValidated = true;
           }
-          if (protocol.OPEN in msgMap && msgMap[protocol.OPEN] != null) {
-            msgMap[protocol.OPEN](protocol.OPENED);
+          if (protocol.OPEN in msgMap && msgMap[protocol.OPEN) != null {
+            msgMap[protocol.OPEN].resolve();
             msgMap[protocol.OPEN] = null;
           }
 
@@ -114,7 +118,7 @@ function socketSetup(socket, nodeID, createdByUs) {
           // either need to send an extend failed (?) or we failed to connect to
           // our first router
           if (protocol.OPEN in msgMap && msgMap[protocol.OPEN] != null) {
-            msgMap[protocol.OPEN](protocol.OPEN_FAILED);
+            msgMap[protocol.OPEN].reject();
             msgMap[protocol.OPEN] = null;
           }
 
@@ -131,7 +135,7 @@ function socketSetup(socket, nodeID, createdByUs) {
           // or do we?
           mappings.addCircuitMapping(otherNodeID, circID, null, null);
           if (protocol.CREATE in msgMap && msgMap[protocol.CREATE] != null) {
-            msgMap[protocol.CREATE](protocol.CREATED);
+            msgMap[protocol.CREATE].resolve();
             msgMap[protocol.CREATE] = null;
           }
 
@@ -140,7 +144,7 @@ function socketSetup(socket, nodeID, createdByUs) {
           // the first router in our circuit and need to restart 
           // Need to know outstanding messages
           if (protocol.CREATE in msgMap && msgMap[protocol.CREATE] != null) {
-            msgMap[protocol.CREATE](protocol.CREATE_FAILED);
+            msgMap[protocol.CREATE].reject();
             msgMap[protocol.CREATE] = null;
           }
 
@@ -162,9 +166,9 @@ function socketSetup(socket, nodeID, createdByUs) {
                   serverloop.initiateConnection(msgFields, otherNodeID, circID);
                 })).then(function(){
                   // TODO: modify send Relay to allow null data
-                  protocol.sendRelay(socket, circID, msgFields.stream_id, protocol.RELAY_CONNECTED, null);
+                  sendWithoutPromise(protocol.sendRelay)(socket, circID, msgFields.stream_id, protocol.RELAY_CONNECTED, null);
                 }).catch(function() {
-                  protocol.sendRelay(socket, circID, msgFields.stream_id, protocol.RELAY_BEGIN_FAILED, null);
+                  sendWithoutPromise(protocol.sendRelay)(socket, circID, msgFields.stream_id, protocol.RELAY_BEGIN_FAILED, null);
                 });
               case protocol.RELAY_DATA:
                 // get streamID and find socket, forward data
@@ -185,6 +189,9 @@ function socketSetup(socket, nodeID, createdByUs) {
                 // TODO: send event to streamID
                 // TODO: event emitter should multiplex nodeID/circID and
                 // streamID because streamIDs aren't unique globally
+                if (msgMap[protocol.RELAY][protocol.RELAY_BEGIN]) {
+                  msgMap[protocl.RELAY][protocol.RELAY_BEGIN].resolve();
+                }
 
               case protocol.RELAY_EXTEND:
                 // create connection to server as specified
@@ -203,19 +210,28 @@ function socketSetup(socket, nodeID, createdByUs) {
 
               case protocol.RELAY_EXTENDED:
                 // execute callback
+                if (msgMap[protocol.RELAY][protocol.RELAY_EXTEND]) {
+                  msgMap[protocol.RELAY][protocol.RELAY_EXTEND].resolve();
+                }
 
               case protocol.RELAY_BEGIN_FAILED:
                 // close socket or server 404 etc.
                 // TODO: send event to streamID
+                if (msgMap[protocol.RELAY][protocol.RELAY_BEGIN]) {
+                  msgMap[protocol.RELAY][protocol.RELAY_BEGIN].reject();
+                }
 
               case protocol.RELAY_EXTEND_FAILED:
                 // restart our socket building
+                if (msgMap[protocol.RELAY][protocol.RELAY_EXTEND]) {
+                  msgMap[protocol.RELAY][protocol.RELAY_EXTEND].reject();
+                }
 
             }
           } else {
             dstSock = mappings.getNodeToSocketMapping(destInfo.nid);
             // TODO: Fill out according to send msg
-            protocol.sendRelay(dstSock, destInfo.circid, msgFields.stream_id, msgFields.relay_command, msgFields.body);
+            sendWithoutPromise(protocol.sendRelay)(dstSock, destInfo.circid, msgFields.stream_id, msgFields.relay_command, msgFields.body);
           }
       } 
       // processed dataBuffer
