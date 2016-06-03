@@ -205,11 +205,11 @@ var server = net.createServer(function (clientSocket) {
         } else {
             // Forward data along circuit
             // 498 is 512 byte cell size minus 14 bytes for cell header.
-            while (data.length > 498) {
-                var body = data.slice(0, 497);
+            while (data.length > protocol.MAX_BODY_SIZE) {
+                var body = data.slice(0, protocol.MAX_BODY_SIZE - 1);
                 var relay_data_cell = protocol.packRelay(circuit_id, stream_id, RELAY_DATA, body);
                 first_hop_socket.write(relay_data_cell);
-                data = Buffer.from(data, 498);
+                data = Buffer.from(data, protocol.MAX_BODY_SIZE);
             }
             var relay_data_cell = protocol.packRelay(circuit_id, stream_id, RELAY_DATA, body);
             first_hop_socket.write(relay_data_cell);
