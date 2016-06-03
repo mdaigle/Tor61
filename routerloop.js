@@ -10,6 +10,8 @@
 //  Implement Global Event Emitter usage keyed on streamID
 //
 //  
+//
+Buffer = require('buffer');
 
 function socketSetup(socket, createdByUs) {
   if (!createdByUs) {
@@ -21,12 +23,13 @@ function socketSetup(socket, createdByUs) {
   // TODO: For msg map need to have individual ids  for relay msgs something
   // like 10+relay_cmd
   socket["msgMap"] = msgMap;
-  var dataBuffer = Buffer.alloc(512, 0);
+  var dataBuffer = new Buffer(0);
   var bytesRead = 0;
   var otherNodeID = null;
   socket.on('data', function (data) {
     // buffer until 512 bytes
-    dataBuffer.append(data);
+    // dataBuffer.append(data);
+    dataBuffer = Buffer.concat([dataBuffer, data]);
     while (dataBuffer.length >= 512) {
       // process message 
       // slice out current msg

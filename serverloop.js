@@ -4,6 +4,8 @@
 //   -> function/event loop should be mapped on a streamID
 
 // when this socket or the other socket is closed teardown the stream
+require('buffer');
+require('dns');
   
 function initiateConnection(msgFields, otherNodeID, circID, resolve, reject) {
   var addrStr = parseString(msgFields.body);
@@ -33,9 +35,17 @@ function initiateConnection(msgFields, otherNodeID, circID, resolve, reject) {
     serverSocket.on("data", function(data) {
       // forward data backwards
       var destSock = mappings.getNodeToSocketMapping(otherNodeID);
-      // TODO: pack a relay Data msg
-      var msg = null;
-      destSock.write(msg);
+      // TODO: add protocol.maxRelayBodyLength
+      if (data.length <= protocol.maxRelayBodyLength) {
+        protocol.sendRelay(destSock, circID, streamID, protocol.RELAY_DATA, data);
+      } else {
+        var numBytesSent = 0;
+        while (numBytesSent < data.length) {
+          segmentLength = Math.min(protocol.maxRelayBodyLength, data.length-numBytesSent);
+          protocol.sendRelay(destSock, circID, streamID, protocol.RELAY_DATA, data.slice(numBytesSent, numBytesSent + segmentLength));
+          numBytesSent += segmentLength;
+        }
+      } 
     });
     // Connect to Host/Port
     serverSocket.connect(hostPort, hostName);
