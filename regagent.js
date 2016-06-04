@@ -476,7 +476,6 @@ exports.register = function(port, service_data, service_name, callback) {
 }
 
 exports.unregister = function(port, callback) {
-    waitForSockets();
     processQueue(function(){
         send_unregister(portnum);
     }, protocol.ACK, callback);
@@ -489,7 +488,6 @@ exports.fetch = function(service_name, callback) {
 }
 
 exports.probe = function(callback) {
-    waitForSockets();
     processQueue(function(){
         send_probe();
     }, protocol.ACK, callback);

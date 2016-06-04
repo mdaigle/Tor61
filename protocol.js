@@ -131,7 +131,7 @@ exports.sendOpened = function(socket, sender_id, receiver_id) {
 }
 
 exports.unpackOpened = function(message_buffer) {
-    return unpackOpen(message_buffer);
+    return exports.unpackOpen(message_buffer);
 }
 
 function packOpenFailed(sender_id, receiver_id) {
@@ -152,7 +152,7 @@ exports.sendOpenFailed = function(socket, sender_id, receiver_id) {
 }
 
 exports.unpackOpenFailed = function(message_buffer) {
-    return unpackOpen(message_buffer);
+    return exports.unpackOpen(message_buffer);
 }
 
 function packCreateFailed(circuit_id) {
