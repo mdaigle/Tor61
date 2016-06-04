@@ -26,179 +26,186 @@ var date = new Date();
 var mapping = require('./mappings');
 var protocol = require('./protocol');
 
-//TODO: Calculate node id using tor utils and make it globally accessible.
-var nid = 1;
-//TODO: replace with actual first hop socket from circuit we create.
-var first_hop_socket = new net.Socket() //placeholder
-//TODO: replace with actual circuit id
-var circuit_id = 1; //placeholder
-
 var stream_id_counter = 1;
 function getNewStreamID() {
     return stream_id_counter++;
 }
 
 //TODO: move below argument processing to main file. Set client facing port as a global.
-var args = process.argv.slice(2);
-if (args.length != 1) {
-    console.log("Incorrect number of arguments.");
-    process.exit(1);
-}
-var clientFacingPort = args[0];
 
-var server = net.createServer(function (clientSocket) {
-    var haveSeenEndOfHeader = false;
-    var header = "";
-    var stream_id = getNewStreamID();
+var server;
 
-    clientSocket.on('end', function() {
-        torutils.sendWithoutPromise(protocol.sendRelay(first_hop_socket, circuit_id, stream_id, RELAY_END, null))
-    });
-    clientSocket.on('error', function(err) {
-        clientSocket.end();
-        torutils.sendWithoutPromise(protocol.sendRelay(first_hop_socket, circuit_id, stream_id, RELAY_END, null))
-    });
+exports.startClientLoop = function(nid) {
+    var first_hop_socket;
+    server = net.createServer(function (clientSocket) {
+        var haveSeenEndOfHeader = false;
+        var header = "";
+        var stream_id = getNewStreamID();
 
-    // do we need to pass as an argument
-    clientSocket.on('data', function (data, serverSock) {
-        if (!haveSeenEndOfHeader) {
-            var dataString = data.toString('ascii');
-            header += dataString;
-            if (header.includes('\r\n\r\n') || header.includes('\n\n')) {
-                haveSeenEndOfHeader = true;
-                // pause the socket so that we can initiate a stream.
-                clientSocket.pause();
-                var trimmedHeader = header.split(/(\r\n\r\n|\n\n)/);
-                var headerLines = trimmedHeader[0].split(/[\r]?\n/);
-                var extraData = trimmedHeader[1];
+        clientSocket.on('end', function() {
+            torutils.sendWithoutPromise(protocol.sendRelay(first_hop_socket, circuit_id, stream_id, RELAY_END, null))
+        });
+        clientSocket.on('error', function(err) {
+            clientSocket.end();
+            torutils.sendWithoutPromise(protocol.sendRelay(first_hop_socket, circuit_id, stream_id, RELAY_END, null))
+        });
 
-                // Take the first line and split it on white space
-                var requestLineComponents = headerLines.shift().trim().split(/\s+/);
-                if (requestLineComponents.length != 3) {
-                    console.log("Malformed request line, invalid length");
-                    clientSocket.end();
-                    return;
-                }
+        // do we need to pass as an argument
+        clientSocket.on('data', function (data, serverSock) {
+            if (!haveSeenEndOfHeader) {
+                var dataString = data.toString('ascii');
+                header += dataString;
+                if (header.includes('\r\n\r\n') || header.includes('\n\n')) {
+                    haveSeenEndOfHeader = true;
+                    // pause the socket so that we can initiate a stream.
+                    clientSocket.pause();
+                    var trimmedHeader = header.split(/(\r\n\r\n|\n\n)/);
+                    var headerLines = trimmedHeader[0].split(/[\r]?\n/);
+                    var extraData = trimmedHeader[1];
 
-                var requestType = requestLineComponents[0].toUpperCase();
-                var requestURI = requestLineComponents[1];
-                var requestVersion = requestLineComponents[2].toUpperCase();
-
-                if (HTTP_METHODS.indexOf(requestType) == -1){
-                    // Malformed request.
-                    console.log("Malformed request line, method not valid");
-                    clientSocket.end();
-                    return;
-                }
-                if (requestVersion != "HTTP/1.1"){
-                    // We only support 1.1
-                    console.log("Unsupported version", requestVersion);
-                    clientSocket.end();
-                    return
-                }
-
-                logRequest(requestType, requestURI)
-
-                var optionMap = buildOptionMap(headerLines);
-
-                // Modify header fields
-                requestLineComponents[2] = "HTTP/1.0"
-                if ("connection" in optionMap) {
-                    optionMap["connection"] = "close";
-                }
-                if ("proxy-connection" in optionMap) {
-                    optionMap["proxy-connection"] = "close";
-                }
-
-
-                if (!("host" in optionMap)) {
-                    // All 1.1 messages should have a host field
-                    clientSocket.end();
-                    return;
-                }
-                // Could ipv6 cause there to be multiple : in host?
-                var hostFieldComponents = optionMap.host.split(':');
-
-                var hostName = hostFieldComponents[0];
-                var hostPort = determineServerPort(hostFieldComponents, requestURI);
-
-                dns.lookup(hostName, (err, address, family) => {
-                    if (err) {
-                        console.log('lookup failure');
-                        // some sort of 404 or could not resolve
+                    // Take the first line and split it on white space
+                    var requestLineComponents = headerLines.shift().trim().split(/\s+/);
+                    if (requestLineComponents.length != 3) {
+                        console.log("Malformed request line, invalid length");
                         clientSocket.end();
                         return;
                     }
-                    beginRelay(address, hostPort);
-                });
 
-                function beginRelay(hostname, port) {
-                    // Assign on msg based upon connection type Connect vs Get
-                    // each callback should have a static definition (?)
+                    var requestType = requestLineComponents[0].toUpperCase();
+                    var requestURI = requestLineComponents[1];
+                    var requestVersion = requestLineComponents[2].toUpperCase();
 
-                    var body = new Buffer(hostname + ":" + port + "\0");
-                    var relay_begin_cell = protocol.packRelay(circuit_id, stream_id, protocol.RELAY_BEGIN, body);
-                    console.log(relay_begin_cell.toString());
-                    // first_hop_socket.write(relay_begin_cell);
+                    if (HTTP_METHODS.indexOf(requestType) == -1){
+                        // Malformed request.
+                        console.log("Malformed request line, method not valid");
+                        clientSocket.end();
+                        return;
+                    }
+                    if (requestVersion != "HTTP/1.1"){
+                        // We only support 1.1
+                        console.log("Unsupported version", requestVersion);
+                        clientSocket.end();
+                        return
+                    }
 
-                    torutils.sendWithPromise(protocol.sendRelay(first_hop_socket, circuit_id, stream_id, RELAY_BEGIN, null), function() {
+                    logRequest(requestType, requestURI)
 
-                            // Map from identifiers to this socket so that
-                            // the main loop can route data cells coming
-                            // from the network.
-                            mappings.addStreamToSocketMapping(nid, _circuit_id, _stream_id, clientSocket);
-                            // This is the response for the stream we began
-                            //TODO: break up header before sending (if necessary)
-                            if (requestType == "CONNECT") {
-                                //TODO: send 200 to client here?
-                                var msg = "HTTP/1.1 200 OK\r\n\r\n";
-                                clientSocket.write(msg);
-                                first_hop_socket.on("error", function() {
-                                    // send 502 bad gateway
-                                    var msg = "HTTP/1.1 502 Bad Gateway\r\n\r\n";
-                                    clientSocket.write(msg, function() {
-                                        clientSocket.end();
-                                    });
-                                });
-                            } else {
-                                var modifiedHeader = buildHTTPHeader(requestLineComponents, optionMap);
-                                first_hop_socket.write(modifiedHeader + extraData);
-                            }
-                                // Resume listening for data on client socket so
-                                // that we can forward it along the new stream.
-                            clientSocket.resume();
-                        },
-                        function () { //fail callback
-                            var msg = "HTTP/1.1 502 Bad Gateway\r\n\r\n";
-                            clientSocket.write(msg, function() {
-                                clientSocket.end();
-                            });
+                    var optionMap = buildOptionMap(headerLines);
+
+                    // Modify header fields
+                    requestLineComponents[2] = "HTTP/1.0"
+                    if ("connection" in optionMap) {
+                        optionMap["connection"] = "close";
+                    }
+                    if ("proxy-connection" in optionMap) {
+                        optionMap["proxy-connection"] = "close";
+                    }
+
+
+                    if (!("host" in optionMap)) {
+                        // All 1.1 messages should have a host field
+                        clientSocket.end();
+                        return;
+                    }
+                    // Could ipv6 cause there to be multiple : in host?
+                    var hostFieldComponents = optionMap.host.split(':');
+
+                    var hostName = hostFieldComponents[0];
+                    var hostPort = determineServerPort(hostFieldComponents, requestURI);
+
+                    dns.lookup(hostName, (err, address, family) => {
+                        if (err) {
+                            console.log('lookup failure');
+                            // some sort of 404 or could not resolve
+                            clientSocket.end();
+                            return;
+                        }
+                        if (mappings.BASE_CIRC_ID == 0) {
+                            first_hop_socket = net.createConnection(hostName, hostPort);
+                        } else {
+                            circuit_mapping = mappings.getCircuitMapping(nid, BASE_CIRC_ID);
+                            first_hop_socket = mappings.getNodeToSocketMapping(circuit_mapping.nid);
+                            beginRelay(address, hostPort);
+                        }
+
+                        first_hop_socket.on("data", (data) => {
+                            clientSocket.write(data);
                         });
-            }
-        } else {
-            // Forward data along circuit
-            // 498 is 512 byte cell size minus 14 bytes for cell header.
-            while (data.length > protocol.MAX_BODY_SIZE) {
-                var body = data.slice(0, protocol.MAX_BODY_SIZE - 1);
+
+                        first_hop_socket.on("error", () => {
+                            //TODO: error handling
+                            clientSocket.end();
+                        })
+                    });
+
+                    function beginRelay(hostname, port) {
+                        // Assign on msg based upon connection type Connect vs Get
+                        // each callback should have a static definition (?)
+
+                        var body = new Buffer(hostname + ":" + port + "\0");
+                        var relay_begin_cell = protocol.packRelay(circuit_id, stream_id, protocol.RELAY_BEGIN, body);
+                        console.log(relay_begin_cell.toString());
+                        // first_hop_socket.write(relay_begin_cell);
+
+                        torutils.sendWithPromise(protocol.sendRelay(first_hop_socket, circuit_id, stream_id, RELAY_BEGIN, null), function() {
+
+                                // Map from identifiers to this socket so that
+                                // the main loop can route data cells coming
+                                // from the network.
+                                mappings.addStreamToSocketMapping(nid, _circuit_id, _stream_id, clientSocket);
+                                // This is the response for the stream we began
+                                //TODO: break up header before sending (if necessary)
+                                if (requestType == "CONNECT") {
+                                    //TODO: send 200 to client here?
+                                    var msg = "HTTP/1.1 200 OK\r\n\r\n";
+                                    clientSocket.write(msg);
+                                    first_hop_socket.on("error", function() {
+                                        // send 502 bad gateway
+                                        var msg = "HTTP/1.1 502 Bad Gateway\r\n\r\n";
+                                        clientSocket.write(msg, function() {
+                                            clientSocket.end();
+                                        });
+                                    });
+                                } else {
+                                    var modifiedHeader = buildHTTPHeader(requestLineComponents, optionMap);
+                                    first_hop_socket.write(modifiedHeader + extraData);
+                                }
+                                    // Resume listening for data on client socket so
+                                    // that we can forward it along the new stream.
+                                clientSocket.resume();
+                            },
+                            function () { //fail callback
+                                var msg = "HTTP/1.1 502 Bad Gateway\r\n\r\n";
+                                clientSocket.write(msg, function() {
+                                    clientSocket.end();
+                                });
+                            });
+                }
+            } else {
+                // Forward data along circuit
+                // 498 is 512 byte cell size minus 14 bytes for cell header.
+                while (data.length > protocol.MAX_BODY_SIZE) {
+                    var body = data.slice(0, protocol.MAX_BODY_SIZE - 1);
+                    var relay_data_cell = protocol.packRelay(circuit_id, stream_id, RELAY_DATA, body);
+                    first_hop_socket.write(relay_data_cell);
+                    data = Buffer.from(data, protocol.MAX_BODY_SIZE);
+                }
                 var relay_data_cell = protocol.packRelay(circuit_id, stream_id, RELAY_DATA, body);
                 first_hop_socket.write(relay_data_cell);
-                data = Buffer.from(data, protocol.MAX_BODY_SIZE);
             }
-            var relay_data_cell = protocol.packRelay(circuit_id, stream_id, RELAY_DATA, body);
-            first_hop_socket.write(relay_data_cell);
-        }
+        });
+
     });
 
-});
+    server.on('error', (err) => {
+        console.log("Server error");
+        process.exit(1);
+        //TODO: try broadcasting to clients that we hit an error?
+    })
 
-server.on('error', (err) => {
-    console.log("Server error");
-    process.exit(1);
-    //TODO: try broadcasting to clients that we hit an error?
-})
+    server.listen(clientFacingPort);
 
-server.listen(clientFacingPort);
-
+}
 function buildOptionMap(lines) {
     var options = {};
     for (lineNum in lines) {

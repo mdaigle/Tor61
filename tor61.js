@@ -28,6 +28,7 @@ console.log("nodeID:" + nodeID);
 var args = process.argv.slice(2);
 var torNodePort =  1461;//args[0]; // CHANGE
 var SID = 11;
+var proxyPort = args[2];
 
 // need mapping from nodes -> sockets
 var torNode = net.createServer((socket) => {
@@ -228,9 +229,13 @@ rl.on('close', () => {
 
 regagent.setupRegAgent(function(){
     regagent.unregister(torNodePort, function() {
-    buildCircuit(function(){regagent.register(torNodePort, nodeID, "daigle-tsen", function(){console.log("registered");
-rl.resume();
-})});
+    buildCircuit(function(){
+        regagent.register(torNodePort, nodeID, "daigle-tsen", function(){
+            console.log("registered");
+            clientloop.startClientLoop(nodeID);
+            rl.resume();
+        })
+    });
 });});
 /*
  * If routerList is empty and no other nodes exist,
