@@ -108,7 +108,7 @@ function buildCircuit(onCircuitCompletion) {
       return;
     }
     resultList = response["entries"];
-    
+    console.log(resultList);
     if (resultList.length <= 0) {
       mappings.BASE_CIRC_ID = 0;
       onCircuitCompletion();
