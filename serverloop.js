@@ -9,6 +9,7 @@ require('dns');
 var torutils = require('./torutils');
   
 exports.initiateConnection = function(msgFields, otherNodeID, circID, resolve, reject) {
+  console.log("initating connection");
   var addrStr = msgFields.body.toString(undefined, 0, msgFields.body.length-1);
   var streamID = msgFields.stream_id;
   var addrSplit = addrStr.split(":"); // TODO: this may need work
@@ -21,12 +22,14 @@ exports.initiateConnection = function(msgFields, otherNodeID, circID, resolve, r
     // each callback should have a static definition (?)
     serverSocket.on("error", function() {
       // TODO: should clientloop send 502?
+      console.log("server error");
       serverSocket.end();
       reject();
     });
     serverSocket.on("connect", function() {
       serverSocket.on('error', function() {
         // TODO: send relay end
+        console.log("server error");
         var destSock = mappings.getNodeToSocketMapping(otherNodeID);
         torutils.sendWithoutPromise(protocol.sendRelay)(destSock, circID, streamID, protocol.RELAY_END, null);
         mappings.removeStreamToSocketMapping(otherNodeID, circID, streamID);
@@ -38,6 +41,7 @@ exports.initiateConnection = function(msgFields, otherNodeID, circID, resolve, r
     });
     serverSocket.on("data", function(data) {
       // forward data backwards
+      console.log("received data from server");
       var destSock = mappings.getNodeToSocketMapping(otherNodeID);
       // TODO: add protocol.maxRelayBodyLength
       if (data.length <= protocol.maxRelayBodyLength) {
@@ -52,6 +56,7 @@ exports.initiateConnection = function(msgFields, otherNodeID, circID, resolve, r
       } 
     });
     // Connect to Host/Port
+    console.log("connecting");
     serverSocket.connect(hostPort, hostName);
   }
   dns.lookup(hostname, (err, address, family) => {
@@ -60,6 +65,7 @@ exports.initiateConnection = function(msgFields, otherNodeID, circID, resolve, r
         reject();
         return;
     }
+    console.log("dns success");
     connectToServer(address, hostPort); 
   });
 }

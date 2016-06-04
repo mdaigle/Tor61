@@ -132,16 +132,22 @@ exports.startClientLoop = function(nid, proxyPort) {
                             return;
                         }
                         if (mappings.BASE_CIRC_ID == 0) {
-                            first_hop_socket = net.createConnection(hostName, hostPort);
+                            first_hop_socket = net.createConnection({host:hostName, port:hostPort}, function() {
+                              // TODO: shit
+                              first_hop_socket.write();
+                            } );
+                           first_hop_socket.on("data", (data) => {
+                            console.log("data!");
+                            clientSocket.write(data);
+                            });
+
+
                         } else {
                             circuit_mapping = mappings.getCircuitMapping(nid, mappings.BASE_CIRC_ID);
                             first_hop_socket = mappings.getNodeToSocketMapping(circuit_mapping.nid);
                             beginRelay(address, hostPort);
                         }
 
-                        first_hop_socket.on("data", (data) => {
-                            clientSocket.write(data);
-                        });
 
                         first_hop_socket.on("error", () => {
                             //TODO: error handling
@@ -178,6 +184,7 @@ exports.startClientLoop = function(nid, proxyPort) {
                                         });
                                     });
                                 } else {
+                                    // TODO: this should be a relay function
                                     var modifiedHeader = buildHTTPHeader(requestLineComponents, optionMap);
                                     first_hop_socket.write(modifiedHeader + extraData);
                                 }

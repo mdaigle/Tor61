@@ -79,13 +79,18 @@ exports.openTorConnection = function(host, port, nodeID, receiverID, successCall
   // check if already have a socket
   newSock = mappings.getNodeToSocketMapping(receiverID);
   if (newSock == null) {
-    newSock = net.createConnection({host: host, port:port});
+    newSock = net.createConnection({host: host, port:port}, () => {
+     exports.sendWithPromise(protocol.sendOpen, successCallback.bind(null, newSock), failCallback)(newSock, nodeID, receiverID);
+  console.log("sent open");
+
+      });
     newSock.UUID = Math.random()*10000;
    console.log("created new socket");
   routerloop.socketSetup(newSock, nodeID, true);
-  }
+  } else {
   exports.sendWithPromise(protocol.sendOpen, successCallback.bind(null, newSock), failCallback)(newSock, nodeID, receiverID);
   console.log("sent open");
+  }
 }
 
 exports.createTorCircuit = function(nodeID, circID, successCallback, failCallback) {
