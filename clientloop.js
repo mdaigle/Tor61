@@ -29,7 +29,7 @@ var protocol = require('./protocol');
 //TODO: Calculate node id using tor utils and make it globally accessible.
 var nid = 1;
 //TODO: replace with actual first hop socket from circuit we create.
-var first_hop_socket = new net.Socket(); //placeholder
+var first_hop_socket = new net.Socket() //placeholder
 //TODO: replace with actual circuit id
 var circuit_id = 1; //placeholder
 
@@ -52,18 +52,12 @@ var server = net.createServer(function (clientSocket) {
     var stream_id = getNewStreamID();
 
     clientSocket.on('end', function() {
-        //TODO: end stream with RELAY_END cell
+        torutils.sendWithoutPromise(protocol.sendRelay(first_hop_socket, circuit_id, stream_id, RELAY_END, null))
     });
     clientSocket.on('error', function(err) {
         clientSocket.end();
-        //TODO: end stream with RELAY_END cell
+        torutils.sendWithoutPromise(protocol.sendRelay(first_hop_socket, circuit_id, stream_id, RELAY_END, null))
     });
-
-    //TODO: Don't do write here, right?
-    /*serverSocket.on('data', function(data) {
-        clientSocket.write(data);
-    });*/
-
 
     // do we need to pass as an argument
     clientSocket.on('data', function (data, serverSock) {
@@ -147,21 +141,8 @@ var server = net.createServer(function (clientSocket) {
                     console.log(relay_begin_cell.toString());
                     // first_hop_socket.write(relay_begin_cell);
 
-                    /*
-                    TODO: in main node loop, when we get a RELAY_CONNECTED,
-                    emit an event that will be received here.
-                    When we receive this event, we know that it is okay to
-                    forward data on our new stream.
+                    torutils.sendWithPromise(protocol.sendRelay(first_hop_socket, circuit_id, stream_id, RELAY_BEGIN, null), function() {
 
-                    emit in the format:
-                        emitter.emit("relay_connected", streamid)
-                    */
-
-                    // Emitted when a RELAY_CONNECTED cell is received and we
-                    // are the final recipient.
-                    emitter.on(stream_id, (relay_command)=> {
-                        if (relay_command == "relay_connected")
-                        {
                             // Map from identifiers to this socket so that
                             // the main loop can route data cells coming
                             // from the network.
@@ -186,21 +167,13 @@ var server = net.createServer(function (clientSocket) {
                                 // Resume listening for data on client socket so
                                 // that we can forward it along the new stream.
                             clientSocket.resume();
-                        }
-                    });
-
-                    // Emitted when a RELAY_BEGIN_FAILED cell is received and we
-                    // are the final recipient.
-                    emitter.on(stream_id, (relay_command) => {
-                        if (relay_command == "relay_begin_failed")
-                        {
-                            // The stream we tried to begin could not be created.
-                            // TODO: send error message to client? try again?
-                            // For now, just close the client connection.
-                            clientSocket.end();
-                        }
-                    });
-                }
+                        },
+                        function () { //fail callback
+                            var msg = "HTTP/1.1 502 Bad Gateway\r\n\r\n";
+                            clientSocket.write(msg, function() {
+                                clientSocket.end();
+                            });
+                        });
             }
         } else {
             // Forward data along circuit
