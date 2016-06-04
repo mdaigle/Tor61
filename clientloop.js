@@ -187,15 +187,17 @@ exports.startClientLoop = function(nid, proxyPort) {
             } else {
                 // Forward data along circuit
                 // 498 is 512 byte cell size minus 14 bytes for cell header.
-                while (data.length > protocol.MAX_BODY_SIZE) {
-                    var body = data.slice(0, protocol.MAX_BODY_SIZE - 1);
-                    var relay_data_cell = protocol.packRelay(circuit_id, stream_id, protocol.RELAY_DATA, body);
-                    first_hop_socket.write(relay_data_cell);
-                    data = Buffer.from(data, protocol.MAX_BODY_SIZE);
-                    
+
+                if (mappings.BASE_CIRC_ID != 0) {
+                    while (data.length > protocol.MAX_BODY_SIZE) {
+                        smaller_data = Buffer.from(data, protocol.MAX_BODY_SIZE);
+                        torutils.sendWithoutPromise(protocol.sendRelay(first_hop_socket, circuit_id, stream_id, protocol.RELAY_DATA, data));
+                        data = data.slice(protocol.MAX_BODY_SIZE);
+                    }
+                    torutils.sendWithoutPromise(protocol.sendRelay(first_hop_socket, circuit_id, stream_id, protocol.RELAY_DATA, data));
+                } else {
+                    first_hop_socket.write(data);
                 }
-                var relay_data_cell = protocol.packRelay(circuit_id, stream_id, protocol.RELAY_DATA, body);
-                first_hop_socket.write(relay_data_cell);
             }
         });
 
