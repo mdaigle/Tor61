@@ -9,7 +9,7 @@ var net = require('net');
 var dns = require('dns');
 var mappings = require('./mappings');
 var protocol = require('./protocol');
-// var clientloop = require('./clientloop'); ??????????????
+var clientloop = require('./clientloop');
 var serverloop = require('./serverloop');
 var routerloop = require('./routerloop');
 var torutils = require('./torutils');
@@ -232,7 +232,7 @@ regagent.setupRegAgent(function(){
     buildCircuit(function(){
         regagent.register(torNodePort, nodeID, "daigle-tsen", function(){
             console.log("registered");
-            clientloop.startClientLoop(nodeID);
+            clientloop.startClientLoop(nodeID, proxyPort);
             rl.resume();
         })
     });

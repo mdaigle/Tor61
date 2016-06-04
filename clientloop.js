@@ -23,8 +23,9 @@ clientloop = require("./clientloop.js");
 var net = require('net');
 var dns = require('dns');
 var date = new Date();
-var mapping = require('./mappings');
+var mappings = require('./mappings');
 var protocol = require('./protocol');
+var torutils = require('./torutils');
 
 var stream_id_counter = 1;
 function getNewStreamID() {
@@ -35,19 +36,20 @@ function getNewStreamID() {
 
 var server;
 
-exports.startClientLoop = function(nid) {
+exports.startClientLoop = function(nid, proxyPort) {
     var first_hop_socket;
+    var circuit_id = mappings.BASE_CIRC_ID;
     server = net.createServer(function (clientSocket) {
         var haveSeenEndOfHeader = false;
         var header = "";
         var stream_id = getNewStreamID();
 
         clientSocket.on('end', function() {
-            torutils.sendWithoutPromise(protocol.sendRelay(first_hop_socket, circuit_id, stream_id, RELAY_END, null))
+            torutils.sendWithoutPromise(protocol.sendRelay(first_hop_socket, circuit_id, stream_id, protocol.RELAY_END, null))
         });
         clientSocket.on('error', function(err) {
             clientSocket.end();
-            torutils.sendWithoutPromise(protocol.sendRelay(first_hop_socket, circuit_id, stream_id, RELAY_END, null))
+            torutils.sendWithoutPromise(protocol.sendRelay(first_hop_socket, circuit_id, stream_id, protocol.RELAY_END, null))
         });
 
         // do we need to pass as an argument
@@ -123,7 +125,7 @@ exports.startClientLoop = function(nid) {
                         if (mappings.BASE_CIRC_ID == 0) {
                             first_hop_socket = net.createConnection(hostName, hostPort);
                         } else {
-                            circuit_mapping = mappings.getCircuitMapping(nid, BASE_CIRC_ID);
+                            circuit_mapping = mappings.getCircuitMapping(nid, mappings.BASE_CIRC_ID);
                             first_hop_socket = mappings.getNodeToSocketMapping(circuit_mapping.nid);
                             beginRelay(address, hostPort);
                         }
@@ -143,11 +145,11 @@ exports.startClientLoop = function(nid) {
                         // each callback should have a static definition (?)
 
                         var body = new Buffer(hostname + ":" + port + "\0");
-                        var relay_begin_cell = protocol.packRelay(circuit_id, stream_id, protocol.RELAY_BEGIN, body);
+                        var relay_begin_cell = protocol.packRelay(mappings.BASE_CIRC_ID, stream_id, protocol.RELAY_BEGIN, body);
                         console.log(relay_begin_cell.toString());
                         // first_hop_socket.write(relay_begin_cell);
 
-                        torutils.sendWithPromise(protocol.sendRelay(first_hop_socket, circuit_id, stream_id, RELAY_BEGIN, null), function() {
+                        torutils.sendWithPromise(protocol.sendRelay(first_hop_socket, circuit_id, stream_id, protocol.RELAY_BEGIN, null), function() {
 
                                 // Map from identifiers to this socket so that
                                 // the main loop can route data cells coming
@@ -180,17 +182,19 @@ exports.startClientLoop = function(nid) {
                                     clientSocket.end();
                                 });
                             });
+                      }
                 }
             } else {
                 // Forward data along circuit
                 // 498 is 512 byte cell size minus 14 bytes for cell header.
                 while (data.length > protocol.MAX_BODY_SIZE) {
                     var body = data.slice(0, protocol.MAX_BODY_SIZE - 1);
-                    var relay_data_cell = protocol.packRelay(circuit_id, stream_id, RELAY_DATA, body);
+                    var relay_data_cell = protocol.packRelay(circuit_id, stream_id, protocol.RELAY_DATA, body);
                     first_hop_socket.write(relay_data_cell);
                     data = Buffer.from(data, protocol.MAX_BODY_SIZE);
+                    
                 }
-                var relay_data_cell = protocol.packRelay(circuit_id, stream_id, RELAY_DATA, body);
+                var relay_data_cell = protocol.packRelay(circuit_id, stream_id, protocol.RELAY_DATA, body);
                 first_hop_socket.write(relay_data_cell);
             }
         });
@@ -203,7 +207,7 @@ exports.startClientLoop = function(nid) {
         //TODO: try broadcasting to clients that we hit an error?
     })
 
-    server.listen(clientFacingPort);
+    server.listen(proxyPort);
 
 }
 function buildOptionMap(lines) {
