@@ -46,7 +46,7 @@ exports.startClientLoop = function(nid, proxyPort) {
 
         clientSocket.on('end', function() {
             if (mappings.BASE_CIRC_ID != 0) {
-                torutils.sendWithoutPromise(protocol.sendRelay(first_hop_socket, circuit_id, stream_id, protocol.RELAY_END, null));
+                torutils.sendWithoutPromise(protocol.sendRelay)(first_hop_socket, circuit_id, stream_id, protocol.RELAY_END, null);
             } else {
                 first_hop_socket.end();
             }
@@ -55,7 +55,7 @@ exports.startClientLoop = function(nid, proxyPort) {
         clientSocket.on('error', function(err) {
             clientSocket.end();
             if (mappings.BASE_CIRC_ID != 0) {
-                torutils.sendWithoutPromise(protocol.sendRelay(first_hop_socket, circuit_id, stream_id, protocol.RELAY_END,     null));
+                torutils.sendWithoutPromise(protocol.sendRelay)(first_hop_socket, circuit_id, stream_id, protocol.RELAY_END,     null);
             } else {
                 first_hop_socket.end();
             }
@@ -124,6 +124,8 @@ exports.startClientLoop = function(nid, proxyPort) {
                     var hostName = hostFieldComponents[0];
                     var hostPort = determineServerPort(hostFieldComponents, requestURI);
 
+                    var modifiedHeader = buildHTTPHeader(requestLineComponents, optionMap);
+
                     dns.lookup(hostName, (err, address, family) => {
                         if (err) {
                             console.log('lookup failure');
@@ -133,12 +135,11 @@ exports.startClientLoop = function(nid, proxyPort) {
                         }
                         if (mappings.BASE_CIRC_ID == 0) {
                             first_hop_socket = net.createConnection({host:hostName, port:hostPort}, function() {
-                              // TODO: shit
-                              first_hop_socket.write();
-                            } );
-                           first_hop_socket.on("data", (data) => {
-                            console.log("data!");
-                            clientSocket.write(data);
+                                first_hop_socket.write(modifiedHeader);
+                            });
+                            first_hop_socket.on("data", (data) => {
+                               console.log("data!");
+                               clientSocket.write(data);
                             });
 
 
@@ -164,7 +165,7 @@ exports.startClientLoop = function(nid, proxyPort) {
                         console.log(relay_begin_cell.toString());
                         // first_hop_socket.write(relay_begin_cell);
 
-                        torutils.sendWithPromise(protocol.sendRelay(first_hop_socket, circuit_id, stream_id, protocol.RELAY_BEGIN, null), function() {
+                        torutils.sendWithPromise(protocol.sendRelay, function() {
 
                                 // Map from identifiers to this socket so that
                                 // the main loop can route data cells coming
@@ -185,8 +186,7 @@ exports.startClientLoop = function(nid, proxyPort) {
                                     });
                                 } else {
                                     // TODO: this should be a relay function
-                                    var modifiedHeader = buildHTTPHeader(requestLineComponents, optionMap);
-                                    first_hop_socket.write(modifiedHeader + extraData);
+                                    torutils.sendWithoutPromise(protocol.sendRelay)(first_hop_socket, circuit_id, stream_id, protocol.RELAY_DATA, data);
                                 }
                                     // Resume listening for data on client socket so
                                     // that we can forward it along the new stream.
@@ -197,7 +197,7 @@ exports.startClientLoop = function(nid, proxyPort) {
                                 clientSocket.write(msg, function() {
                                     clientSocket.end();
                                 });
-                            });
+                            })(first_hop_socket, circuit_id, stream_id, protocol.RELAY_BEGIN, null);
                       }
                 }
             } else {
@@ -207,10 +207,10 @@ exports.startClientLoop = function(nid, proxyPort) {
                 if (mappings.BASE_CIRC_ID != 0) {
                     while (data.length > protocol.MAX_BODY_SIZE) {
                         smaller_data = Buffer.from(data, protocol.MAX_BODY_SIZE);
-                        torutils.sendWithoutPromise(protocol.sendRelay(first_hop_socket, circuit_id, stream_id, protocol.RELAY_DATA, data));
+                        torutils.sendWithoutPromise(protocol.sendRelay)(first_hop_socket, circuit_id, stream_id, protocol.RELAY_DATA, data);
                         data = data.slice(protocol.MAX_BODY_SIZE);
                     }
-                    torutils.sendWithoutPromise(protocol.sendRelay(first_hop_socket, circuit_id, stream_id, protocol.RELAY_DATA, data));
+                    torutils.sendWithoutPromise(protocol.sendRelay)(first_hop_socket, circuit_id, stream_id, protocol.RELAY_DATA, data);
                 } else {
                     first_hop_socket.write(data);
                 }
