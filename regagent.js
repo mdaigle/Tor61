@@ -14,12 +14,11 @@ const msg_timeout = 1000;
 const reg_service_hostname = "cse461.cs.washington.edu";//args[0];
 const reg_service_port = 46101; //args[1];
 
-const local_address;
-
 var socket_out = dgram.createSocket('udp4');
 // console.log(socket_out);
 var socket_in = dgram.createSocket('udp4');
 var reg_service_address;
+var local_address;
 
 
 exports.setupRegAgent = function(callback) {
@@ -123,9 +122,9 @@ function process_registered(msg, rinfo){
     var port = last_register_msg.service_port;
 
     if (last_register_msg['explicit_call']) {
-        if (MSG_HANDLER[protocol.REGISTER].responseCallback != null) {
-            MSG_HANDLER[protocol.REGISTER].responseCallback(true);
-            MSG_HANDLER[protocol.REGISTER].responseCallback = null;
+        if (MSG_HANDLER[protocol.REGISTERED].responseCallback != null) {
+            MSG_HANDLER[protocol.REGISTERED].responseCallback(true);
+            MSG_HANDLER[protocol.REGISTERED].responseCallback = null;
         }
     }
     else if ('timeout' in port_map[port] && port_map[port].timeout != null){
