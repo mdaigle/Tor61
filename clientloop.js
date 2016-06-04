@@ -186,7 +186,7 @@ exports.startClientLoop = function(nid, proxyPort) {
                                     });
                                 } else {
                                     // TODO: this should be a relay function
-                                    torutils.sendWithoutPromise(protocol.sendRelay)(first_hop_socket, circuit_id, stream_id, protocol.RELAY_DATA, data))
+                                    torutils.sendWithoutPromise(protocol.sendRelay)(first_hop_socket, circuit_id, stream_id, protocol.RELAY_DATA, data);
                                 }
                                     // Resume listening for data on client socket so
                                     // that we can forward it along the new stream.
