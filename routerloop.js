@@ -108,6 +108,7 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
           mappings.addNodeToSocketMapping(msgFields.opened_id, socket);
           if (protocol.OPEN in msgMap && msgMap[protocol.OPEN] != null) {
             console.log(socket.msgMap);
+            console.log(msgMap);
             msgMap[protocol.OPEN].resolve();
             clearTimeout(msgMap[protocol.OPEN].timeout);
             delete msgMap[protocol.OPEN];

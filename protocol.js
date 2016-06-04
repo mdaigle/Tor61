@@ -99,10 +99,11 @@ function packOpen(sender_id, receiver_id) {
 
 exports.sendOpen = function(res, rej, socket, sender_id, receiver_id) {
     cell = packOpen(sender_id, receiver_id);
-    socket.write(cell);
     console.log(socket.msgMap);
     socket.msgMap[OPEN] = {resolve: res, reject: rej, timeout: setTimeout(function(){console.log("timeout");rej();}, TIMEOUT)};
     console.log(socket.msgMap);
+    console.log("ADDED TO MAP");
+    socket.write(cell);
 }
 
 exports.unpackOpen = function(message_buffer) {
