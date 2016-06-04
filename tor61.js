@@ -117,7 +117,7 @@ function buildCircuit(onCircuitCompletion) {
       // randomly pick first hop
       var numLayers = 5; // actually numLayers + 1
       do{
-        numLayer -= 1;
+        numLayers -= 1;
         firstNode = resultList[Math.floor(Math.random()*resultList.length)];
         firstNode["host"] = torutils.parseIP(firstNode.service_addr.address);
         firstNode["port"] = firstNode.service_addr.port;
