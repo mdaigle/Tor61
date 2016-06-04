@@ -1,4 +1,4 @@
-exports.TIMEOUT = 4000;
+exports.TIMEOUT = TIMEOUT = 4000;
 //TODO: send callbacks and timeouts need to clear socket message map entries
 exports.MAX_BODY_SIZE = 498;
 
