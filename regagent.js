@@ -16,16 +16,14 @@ const reg_service_port = 46101; //args[1];
 
 const local_address;
 
-var socket_out;
+var socket_out = dgram.createSocket('udp4');
 // console.log(socket_out);
-var socket_in;
+var socket_in = dgram.createSocket('udp4');
+var reg_service_address;
+
 
 exports.setupRegAgent = function(callback) {
     local_address = getThisHostIP();
-    socket_out = dgram.createSocket('udp4');
-    // console.log(socket_out);
-    socket_in = dgram.createSocket('udp4');
-    var reg_service_address;
     dns.lookup(reg_service_hostname, (err, address, family) => {
         if (err) {
             console.log("error resolving service hostname");
@@ -156,9 +154,9 @@ function process_fetchresponse(msg, rinfo){
     clearTimeout(last_msg_timeout);
     data = protocol.unpackFetchResponse(msg);
     if (data == null) {protocolError("null data in process_fetchresponse");}
-    if (MSG_HANDLER[protocol.FETCH].responseCallback != null) {
-        MSG_HANDLER[protocol.FETCH].responseCallback(data);
-        MSG_HANDLER[protocol.FETCH].responseCallback = null;
+    if (MSG_HANDLER[protocol.FETCHRESPONSE].responseCallback != null) {
+        MSG_HANDLER[protocol.FETCHRESPONSE].responseCallback(data);
+        MSG_HANDLER[protocol.FETCHRESPONSE].responseCallback = null;
     }
     processQueue();
 }
@@ -171,16 +169,16 @@ function process_ack(msg, rinfo){
     if (last_msg_sent == protocol.PROBE){
         clearTimeout(last_msg_timeout);
         last_msg_sent = -1;
-        if (MSG_HANDLER[protocol.PROBE].responseCallback != null) {
-            MSG_HANDLER[protocol.PROBE].responseCallback(true);
-            MSG_HANDLER[protocol.PROBE].responseCallback = null;
+        if (MSG_HANDLER[protocol.ACK].responseCallback != null) {
+            MSG_HANDLER[protocol.ACK].responseCallback(true);
+            MSG_HANDLER[protocol.ACK].responseCallback = null;
         }
     }else if(last_msg_sent == protocol.UNREGISTER){
         clearTimeout(last_msg_timeout);
         last_msg_sent = -1;
-        if (MSG_HANDLER[protocol.UNREGISTER].responseCallback != null) {
-            MSG_HANDLER[protocol.UNREGISTER].responseCallback(true);
-            MSG_HANDLER[protocol.UNREGISTER].responseCallback = null;
+        if (MSG_HANDLER[protocol.ACK].responseCallback != null) {
+            MSG_HANDLER[protocol.ACK].responseCallback(true);
+            MSG_HANDLER[protocol.ACK].responseCallback = null;
         }
     }else{
         protocolError("process_ack");
@@ -398,10 +396,11 @@ socket_out.on('message', (buf, rinfo) => {
     }
 
     var header = unpackMainFields(buf);
+    console.log(header);
     if (header != null && header.magic == protocol.MAGIC){
     if (command_ok(header.command) && sequence_num_ok(header.seq_num)){
       // valid packet
-      MSG_HANDLER[header.command](buf, rinfo);
+      MSG_HANDLER[header.command]["process"](buf, rinfo);
       last_msg_sent = -1;
       processQueue();
     }
@@ -473,15 +472,9 @@ function bind_sockets(callback) {
 
 //PUBLIC FACING FUNCTIONS
 exports.register = function(port, service_data, service_name, callback) {
-    action = function(){processQueue(function(){
-            send_register(port, service_data, service_name, true);
-        }, protocol.REGISTERED, callback);
-    // }
-    // if (!socketsAreBound) {
-    //     setTimeout(1000, action);
-    // } else {
-    //     action();
-    // }
+    processQueue(function(){
+        send_register(port, service_data, service_name, true);
+    }, protocol.REGISTERED, callback);
 }
 
 exports.unregister = function(port, callback) {
@@ -492,8 +485,6 @@ exports.unregister = function(port, callback) {
 }
 
 exports.fetch = function(service_name, callback) {
-    console.log("got a fetch command");
-    waitForSockets();
     processQueue(function(){
         send_fetch(service_name);
     }, protocol.FETCHRESPONSE, callback);
