@@ -477,7 +477,7 @@ exports.register = function(port, service_data, service_name, callback) {
 
 exports.unregister = function(port, callback) {
     processQueue(function(){
-        send_unregister(portnum);
+        send_unregister(port);
     }, protocol.ACK, callback);
 }
 
