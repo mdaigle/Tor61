@@ -50,7 +50,7 @@ function packCreate(circuit_id) {
 exports.sendCreate = function(res, rej, socket, circuit_id) {
     cell = packCreate(circuit_id);
     socket.write(cell);
-    socket.msgMap[CREATE] = {resolve: res, reject: rej, timeout: setTimeout(function(){rej();}, TIMEOUT)};
+    socket.msgMap[CREATE][circuit_id] = {resolve: res, reject: rej, timeout: setTimeout(function(){rej();}, TIMEOUT)};
 }
 
 function packCreated(circuit_id) {

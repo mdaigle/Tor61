@@ -36,13 +36,16 @@ exports.addCircuitMapping = function(srcID, srcCircID, destID, destCircID) {
 
 exports.removeCircuitMapping = function(nodeID, circID){
     if (nodeID in circuit_map) {
-        if (circID in circuit_map[nodeID]) {
+        if (circID != undefined && circID in circuit_map[nodeID]) {
             delete circuit_map[nodeID][circID];
+        } else {
+          delete circuit_map[nodeID];
         }
         //throw "Trying to delete circuit_id that's not in the map";
     }
     //throw "Trying to delete circuit_id from a node that's not in the map";
 }
+
 
 exports.getCircuitMapping = function(srcID, srcCircID) {
     if (srcID in circuit_map) {

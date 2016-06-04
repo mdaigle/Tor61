@@ -41,6 +41,7 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
   var dataBuffer = new Buffer(0);
   var bytesRead = 0;
   var otherNodeID = null;
+  var teardown = function () {};
   socket.on('data', function (data) {
     // buffer until 512 bytes
     // dataBuffer.append(data);
@@ -58,26 +59,58 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
         return;
       }
       socketValidated = false;
-      otherNodeID = null;
       msgFields = protocol.unpack(command, msg);
       // TODO: These should all check if socket is validated before handling
+      teardown = function(){
+        if (otherNodeID != null) {
+          mappings.removeNodeToSocketMapping(otherNodeID); 
+          if (circID != null && circID != 0) {
+            mappings.removeCircuitMapping(otherNodeID);
+          }
+        }
+        socket.end();
+        // TODO: reject all messages
+        if (protocol.OPEN in msgMap && "reject" in msgMap[protocol.OEPN]) {
+          msgMap[protocol.OPEN].reject();
+        }
+        if (protocol.CREATE in msgMap) {
+          for (var tempID in msgMap[protocol.CREATE]) {
+            if ("reject" in msgMap[protocol.CREATE][tempID]) {
+              msgMap[protocol.CREATE][tempID].reject();
+            }
+          }
+        }
+        if (protocol.RELAY in msgMap) {
+          for (var relayCmd in msgMap[protocol.RELAY]) {
+            for (var strID in msgMap[protocol.RELAY][relayCmd]) {
+              if ("reject" in msgMap[protocol.RELAY][relayCmd][strID]) {
+                msgMap[protocol.RELAY][relayCmd][strID].reject();
+              }
+            }
+          }
+        }
+      };
+
+      if (!socketValidated && (command != protocol.OPEN && commmand != protocol.OPENED && command != protocol.OPEN_FAILED)) {
+        teardown();
+        return;
+      }
       switch (command) {
         // may need a concept of last msg sent or any outstanding circuit
         // building/setup messages
         case protocol.OPEN:
           clearTimeout(openTimeout);
           // assert destNodeID == nodeID
-          if (msgFields.destID != nodeID) {
-            protocol.sendOpenFailed(socket, msgFields.openerID, msgFields.destID);
+          if (msgFields.opened_id != nodeID) {
+            protocol.sendOpenFailed(socket, msgFields.opener_id, msgFields.opened_id);
           }
-          // assert msgFields.openerID != self.nodeID
           // do we already have a mapping?
-          mappings.addNodeToSocketMapping(msgFields.openerID, socket);
-          protocol.sendOpened(socket, msgFields.openerID, msgFields.destID);
+          mappings.addNodeToSocketMapping(msgFields.opener_id, socket);
+          protocol.sendOpened(socket, msgFields.opener_id, msgFields.opened_id);
           if (!createdByUs) {
             socketValidated = true;
           }
-          openerID = msgFields.openerID;
+          otherNodeID = msgFields.opened_id;
 
         case protocol.OPENED:
           // circuit successfully added the first router
@@ -86,12 +119,13 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
           if (createdByUs) {
             socketValidated = true;
           }
-          mappings.addNodeToSocketMapping(msgFields,openerID, socket);
+          mappings.addNodeToSocketMapping(msgFields.opened_id, socket);
           if (protocol.OPEN in msgMap && msgMap[protocol.OPEN] != null) {
             msgMap[protocol.OPEN].resolve();
             clearTimeout(msgMap[protocol.OPEN].timeout);
-            msgMap[protocol.OPEN] = null;
+            delete msgMap[protocol.OPEN];
           }
+          otherNodeID = msgFields.opened_id;
 
         case protocol.OPEN_FAILED:
           // connecting to a node failed
@@ -100,7 +134,7 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
           if (protocol.OPEN in msgMap && msgMap[protocol.OPEN] != null) {
             msgMap[protocol.OPEN].reject();
             clearTimeout(msgMap[protocol.OPEN].timeout);
-            msgMap[protocol.OPEN] = null;
+            delete msgMap[protocol.OPEN];
           }
 
         case protocol.CREATE:
@@ -116,9 +150,9 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
           // or do we?
           mappings.addCircuitMapping(otherNodeID, circID, null, null);
           if (protocol.CREATE in msgMap && msgMap[protocol.CREATE] != null) {
-            msgMap[protocol.CREATE].resolve();
-            clearTimeout(msgMap[protocol.CREATE].timeout);
-            msgMap[protocol.CREATE] = null;
+            msgMap[protocol.CREATE][circID].resolve();
+            clearTimeout(msgMap[protocol.CREATE][circID].timeout);
+            delete msgMap[protocol.CREATE][circID];
           }
 
         case protocol.CREATE_FAILED:
@@ -126,9 +160,9 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
           // the first router in our circuit and need to restart
           // Need to know outstanding messages
           if (protocol.CREATE in msgMap && msgMap[protocol.CREATE] != null) {
-            msgMap[protocol.CREATE].reject();
-            clearTimeout(msgMap[protocol.CREATE].timeout);
-            msgMap[protocol.CREATE] = null;
+            msgMap[protocol.CREATE][circID].reject();
+            clearTimeout(msgMap[protocol.CREATE][circID].timeout);
+            delete msgMap[protocol.CREATE][circID];
           }
 
         case protocol.DESTROY:
@@ -227,8 +261,11 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
   });
   socket.on('close', function() {
     // teardown any pertinent
-    if (otherNodeID != null) {
-      mappings.removeNodeToSocketMapping(otherNodeID);
-    }
+    teardown();
+    socket.end();
   });
+  socket.on('error', function() {
+    teardown();
+    socket.end();
+  );
 }
