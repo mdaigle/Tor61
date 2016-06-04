@@ -409,7 +409,7 @@ socket_in.on('message', (buf, rinfo) => {
     header = unpackMainFields(buf);
     if (header != null && header.magic == protocol.MAGIC) {
       if (header.command == protocol.PROBE) {
-          MSG_HANDLER[header.command](buf, rinfo);
+          MSG_HANDLER[header.command]["process"](buf, rinfo);
       }
     }
 });
