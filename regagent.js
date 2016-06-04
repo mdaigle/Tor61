@@ -11,29 +11,38 @@ const msg_timeout = 1000;
 //const args = process.argv.slice(2);
 //assert(args.length == 2);
 
-const socket_out = dgram.createSocket('udp4');
-const socket_in = dgram.createSocket('udp4');
-
 const reg_service_hostname = "cse461.cs.washington.edu";//args[0];
 const reg_service_port = 46101; //args[1];
 
-const local_address = getThisHostIP();
+const local_address;
 
-var reg_service_address;
-dns.lookup(reg_service_hostname, (err, address, family) => {
-    if (err) {
-        console.log("error resolving service hostname");
-        process.exit(0);
-    }
+var socket_out;
+// console.log(socket_out);
+var socket_in;
 
-    reg_service_address = address;
+exports.setupRegAgent = function(callback) {
+    local_address = getThisHostIP();
+    socket_out = dgram.createSocket('udp4');
+    // console.log(socket_out);
+    socket_in = dgram.createSocket('udp4');
+    var reg_service_address;
+    dns.lookup(reg_service_hostname, (err, address, family) => {
+        if (err) {
+            console.log("error resolving service hostname");
+            process.exit(0);
+        }
 
-    //TODO: remove?
-    console.log('regServerIP:', address);
-    console.log('thisHostIP:', local_address);
+        // console.log("looking up");
+        reg_service_address = address;
 
-    bind_sockets();
-});
+        //TODO: remove?
+        console.log('regServerIP:', address);
+        console.log('thisHostIP:', local_address);
+
+        bind_sockets(callback);
+    });
+
+}
 
 // Holds mappings from port number to an object holding {service name, service
 // data, and a timer id}. The timer id specifies a timer object used for
@@ -452,35 +461,47 @@ function getThisHostIP() {
 }
 
 // Binds socket_out and socket_in to sequential ports.
-function bind_sockets() {
-    var rand_port = (Math.random() * 3000) + 2000;
-    socket_out.bind(rand_port);
-    socket_in.bind(rand_port + 1);
+function bind_sockets(callback) {
+    var rand_port = Math.round((Math.random() * 3000) + 2000);
+    socket_out.bind(rand_port, () => {
+        socket_in.bind(rand_port + 1, () => {
+            callback();
+        });
+    });
 }
-
 
 
 //PUBLIC FACING FUNCTIONS
 exports.register = function(port, service_data, service_name, callback) {
-    processQueue(function(){
-        send_register(port, service_data, service_name, true);
-    }, protocol.REGISTER, callback);
+    action = function(){processQueue(function(){
+            send_register(port, service_data, service_name, true);
+        }, protocol.REGISTERED, callback);
+    // }
+    // if (!socketsAreBound) {
+    //     setTimeout(1000, action);
+    // } else {
+    //     action();
+    // }
 }
 
 exports.unregister = function(port, callback) {
+    waitForSockets();
     processQueue(function(){
         send_unregister(portnum);
-    }, protocol.UNREGISTER, callback);
+    }, protocol.ACK, callback);
 }
 
 exports.fetch = function(service_name, callback) {
+    console.log("got a fetch command");
+    waitForSockets();
     processQueue(function(){
         send_fetch(service_name);
-    }, protocol.FETCH, callback);
+    }, protocol.FETCHRESPONSE, callback);
 }
 
 exports.probe = function(callback) {
+    waitForSockets();
     processQueue(function(){
         send_probe();
-    }, protocol.PROBE, callback);
+    }, protocol.ACK, callback);
 }

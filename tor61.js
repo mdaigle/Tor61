@@ -109,7 +109,7 @@ function buildCircuit(onCircuitCompletion) {
       console.log("Failed");
       buildCircuit(onCircuitCompletion);
     }
-    torutils.createFirstHop(firstNode.host, firstNode.port, nodeID, firstNode.data, function() { 
+    torutils.createFirstHop(firstNode.host, firstNode.port, nodeID, firstNode.data, function() {
       secondNode = resultList[Math.random(0, resultList.length)];
       // TODO: double check function portrait
       torutils.extendTorConnection(secondNode.host, secondNode.port, secondNode.data, generateCircID(true), function() {
@@ -119,11 +119,12 @@ function buildCircuit(onCircuitCompletion) {
           torutils.extendTorConnection(endNode.host, endNode.port, endNode.data, generateCircID(true), onCircuitCompletion, failCallback);
         }, failCallback);
       }, failCallback);
-    }, failCallback);  
+    }, failCallback);
   });
 }
-
-buildCircuit(function(){regagent.register(torNodePort, nodeID, "daigle-tsen", function(){console.log("registered");})});
+regagent.setupRegAgent(function(){
+    buildCircuit(function(){regagent.register(torNodePort, nodeID, "daigle-tsen", function(){console.log("registered");})});
+});
 
 /*
  * If routerList is empty and no other nodes exist,
