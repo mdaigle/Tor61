@@ -2,7 +2,7 @@ const crypto = require('crypto');
 require('./routerloop');
 var net = require('net');
 
-exports.parseIP(ip_as_int) {
+exports.parseIP = function(ip_as_int) {
     buf = new Buffer(4);
     buf.writeUInt32BE(ip_as_int);
     ip = buf.readUInt8(0).toString() + "." +
