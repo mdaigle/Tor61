@@ -9,7 +9,7 @@
 //
 //  Implement Global Event Emitter usage keyed on streamID
 //
-//
+//  TODO: handle socket errors nicely.
 //
 //
 require('buffer');
@@ -50,7 +50,9 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
       // slice out current msg
       msg = dataBuffer.slice(0, 512);
       // check command, handle appropriately
-      circID, command = unpackMainFields(msg);
+      unpacked = unpackMainFields(msg);
+      circID = unpacked.circuit_id;
+      command = unpacked.cell_type;
       if (command < 0 || command > 8) {
         console.log("bad message");
         return;
