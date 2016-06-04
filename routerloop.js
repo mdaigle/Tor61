@@ -17,6 +17,7 @@ var net = require('net');
 var mappings = require('./mappings');
 var protocol = require('./protocol');
 var serverloop = require('./serverloop');
+var torutils = require('./torutils');
 
 
 // Note: send functions that should use this include:
@@ -83,6 +84,7 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
           if (createdByUs) {
             socketValidated = true;
           }
+          mappings.addNodeToSocketMapping(msgFields,openerID, socket);
           if (protocol.OPEN in msgMap && msgMap[protocol.OPEN] != null) {
             msgMap[protocol.OPEN].resolve();
             clearTimeout(msgMap[protocol.OPEN].timeout);
@@ -144,9 +146,9 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
                 (new Promise(function(resolve, reject){
                   serverloop.initiateConnection(msgFields, otherNodeID, circID);
                 })).then(function(){
-                  sendWithoutPromise(protocol.sendRelay)(socket, circID, msgFields.stream_id, protocol.RELAY_CONNECTED, null);
+                  torutils.sendWithoutPromise(protocol.sendRelay)(socket, circID, msgFields.stream_id, protocol.RELAY_CONNECTED, null);
                 }).catch(function() {
-                  sendWithoutPromise(protocol.sendRelay)(socket, circID, msgFields.stream_id, protocol.RELAY_BEGIN_FAILED, null);
+                  torutils.sendWithoutPromise(protocol.sendRelay)(socket, circID, msgFields.stream_id, protocol.RELAY_BEGIN_FAILED, null);
                 });
               case protocol.RELAY_DATA:
                 // get streamID and find socket, forward data
@@ -173,6 +175,8 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
                 }
 
               case protocol.RELAY_EXTEND:
+                /*
+                // TODO: if extending to self put mapping from circ to null
                 // create connection to server as specified
                 // TODO: parse host and port
                 // TODO: we should partition this into another file
@@ -186,7 +190,7 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
                   }
                 };
                 // TODO: send Open with timeout that returns relay_extend_failed
-
+                */
               case protocol.RELAY_EXTENDED:
                 // execute callback
                 if (msgMap[protocol.RELAY][protocol.RELAY_EXTEND][msgFields.stream_id]) {
@@ -212,7 +216,7 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
             }
           } else {
             dstSock = mappings.getNodeToSocketMapping(destInfo.nid);
-            sendWithoutPromise(protocol.sendRelay)(dstSock, destInfo.circid, msgFields.stream_id, msgFields.relay_command, msgFields.body);
+            torutils.sendWithoutPromise(protocol.sendRelay)(dstSock, destInfo.circid, msgFields.stream_id, msgFields.relay_command, msgFields.body);
           }
       }
       // processed dataBuffer

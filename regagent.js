@@ -8,14 +8,14 @@ const readline = require('readline');
 // Standard timeout for a response to a request.
 const msg_timeout = 1000;
 
-const args = process.argv.slice(2);
-assert(args.length == 2);
+//const args = process.argv.slice(2);
+//assert(args.length == 2);
 
 const socket_out = dgram.createSocket('udp4');
 const socket_in = dgram.createSocket('udp4');
 
-const reg_service_hostname = args[0];
-const reg_service_port = args[1];
+const reg_service_hostname = "cse461.cs.washington.edu";//args[0];
+const reg_service_port = 46101; //args[1];
 
 const local_address = getThisHostIP();
 
@@ -46,13 +46,13 @@ var seq_num = 0;
 var last_msg_sent = -1;
 
 var shouldPrompt = false;
-const rl = readline.createInterface({
+/*const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
     terminal: false
 });
 rl.pause();
-
+*/
 messageQueue = [];
 function processQueue(messageAction, messageType, responseCallback){
     if (messageType != null && responseCallback != null) {
@@ -318,14 +318,14 @@ function send_ack(socket){
             rl.resume();
             break;
     }
-});*/
+});
 
 rl.on('close', () => {
     socket_in.close();
     socket_out.close();
     process.exit(1);
 });
-
+*/
 // function arguments:
 //    msg
 //    rinfo
@@ -350,18 +350,18 @@ var num_listening = 0;
 socket_out.on('listening', () => {
     num_listening++;
     if (num_listening == 2) {
-        rl.prompt();
+        //rl.prompt();
         shouldPrompt = false;
-        rl.resume();
+        //rl.resume();
     }
 });
 
 socket_in.on('listening', () => {
     num_listening++;
     if (num_listening == 2) {
-        rl.prompt();
+        //rl.prompt();
         shouldPrompt = false;
-        rl.resume();
+        //rl.resume();
     }
 });
 

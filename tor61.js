@@ -10,6 +10,8 @@ var protocol = require('./protocol');
 // var clientloop = require('./clientloop'); ??????????????
 var serverloop = require('./serverloop');
 var routerloop = require('./routerloop');
+var torutils = require('./torutils');
+var regagent = require('./regagent');
 
 // SETUP
 // Setup listening socket, but ignore requests until registered
@@ -19,7 +21,7 @@ var routerloop = require('./routerloop');
 //  Connect to other nodes
 // Register with reg service
 //  Need way to interface with reg service
-var nodeID = generateNodeID();
+var nodeID = torutils.generateNodeID();
 var args = process.argv.slice(2);
 var torNodePort = args[0]; // CHANGE
 
@@ -34,7 +36,7 @@ torNode.on('error', (err) => {
 });
 
 
-server.listen(torNodePort); // can add callback
+torNode.listen(torNodePort); // can add callback
 
 /* Notes:
  * Maybe we should connect to all routers so that the relay-extend
@@ -99,19 +101,29 @@ server.listen(torNodePort); // can add callback
 // }
 
 // TODO:
-function buildCircuit() {
-
-    //Call fetch, do other stuff in its callback
-  failCallback = function() {
-    // tear down the circuit
-    // try to rebuild
-  }
-  successCallback = function() {
-    extendTorConnection(,
-
-  }
-  createFirstHop()
+function buildCircuit(onCircuitCompletion) {
+  regagent.fetch("daigle-tsen", function(resultList) {
+    // randomly pick first hop
+    firstNode = resultList[Math.random(0, resultList.length)];
+    function failCallback() {
+      console.log("Failed");
+      buildCircuit(onCircuitCompletion);
+    }
+    torutils.createFirstHop(firstNode.host, firstNode.port, nodeID, firstNode.data, function() { 
+      secondNode = resultList[Math.random(0, resultList.length)];
+      // TODO: double check function portrait
+      torutils.extendTorConnection(secondNode.host, secondNode.port, secondNode.data, generateCircID(true), function() {
+        thirdNode = resultList[Math.random(0, resultList.length)];
+        torutils.extendTorConnection(thirdNode.host, thirdNode.port, thirdNode.data, generateCircID(true), function() {
+          endNode = resultList[Math.random(0, resultList.length)];
+          torutils.extendTorConnection(endNode.host, endNode.port, endNode.data, generateCircID(true), onCircuitCompletion, failCallback);
+        }, failCallback);
+      }, failCallback);
+    }, failCallback);  
+  });
 }
+
+buildCircuit(function(){regagent.register(torNodePort, nodeID, "daigle-tsen", function(){console.log("registered");})});
 
 /*
  * If routerList is empty and no other nodes exist,
@@ -124,7 +136,7 @@ function buildCircuit() {
  * ClientLoop should know when looping through self based upon BASE_CIRC_ID
  *
  * When looping through self serverloop and clientloop should access streamID to
- * socket and forward data, ignoring routerLoop.
+ * socket and forward data, ignoring routerLoop.*/
 
 // TEARDOWN
 //  Teardown circuit (send Destroy)

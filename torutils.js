@@ -55,7 +55,7 @@ exports.createTorCircuit = function(nodeID, circID, successCallback, failCallbac
   sendWithPromise(protocol.sendCreate, successCallback, failCallback)(socket, circID);
 }
 
-exports.extendTorConnection = function(host, port, nodeID, receiverID, circID, successCallback, failCallback) {
+exports.extendTorConnection = function(host, port, receiverID, circID, successCallback, failCallback) {
   var bodyBuf = packExtendBody(host, port, receiverID);
   var socket = mappings.getNodeToSocketMapping(receiverID);
   sendWithPromise(protocol.sendRelay, successCallback, failCallback)(socket, circID, 0, protocol.RELAY_EXTEND, bodyBuf);

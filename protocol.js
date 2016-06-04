@@ -85,7 +85,7 @@ function packOpen(sender_id, receiver_id) {
 exports.sendOpen = function(res, rej, socket, sender_id, receiver_id) {
     cell = packOpen(sender_id, receiver_id);
     socket.write(cell);
-    socket.msgMap[protocol.OPEN] = {resolve: res, reject: rej, timeout: setTimeout(function(){rej();}, TIMEOUT);
+    socket.msgMap[protocol.OPEN] = {resolve: res, reject: rej, timeout: setTimeout(function(){rej();}, TIMEOUT)};
 }
 
 exports.unpackOpen = function(message_buffer) {
