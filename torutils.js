@@ -2,6 +2,7 @@ const crypto = require('crypto');
 var routerloop = require('./routerloop');
 var net = require('net');
 var protocol = require('./protocol');
+var mappings = require('./mappings');
 
 exports.parseIP = function(ip_as_int) {
     buf = new Buffer(4);
@@ -46,7 +47,7 @@ function packExtendBody(host, port, receiverID) {
 //  sendRelay
 //
 // Timeout callback should be function(){rej();}
-eexports.sendWithPromise = function(sendFunction, successCallback, failCallback) {
+exports.sendWithPromise = function(sendFunction, successCallback, failCallback) {
   var ret = null;
   var p = new Promise(function(resolve, reject) {
     ret = sendFunction.bind(null, resolve, reject);

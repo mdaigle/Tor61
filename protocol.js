@@ -43,6 +43,21 @@ exports.unpackMainFields = function(message_buffer) {
     }
 }
 
+exports.unpack = function(command, message_buffer) {
+  switch(command) {
+    case protocol.OPEN:
+      return exports.unpackOpen(message_buffer);
+    case protocol.OPENED:
+      return exports.unpackOpened(message_buffer);
+    case protocol.OPEN_FAILED:
+      return exports.unpackOpenFailed(message_buffer);
+    case protocol.RELAY:
+      return exports.unpackRelay(message_buffer);
+    default:
+      return {};
+  }
+}
+
 function packCreate(circuit_id) {
     return packMainFields(circuit_id, CREATE);
 }

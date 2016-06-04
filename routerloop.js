@@ -245,5 +245,6 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
   socket.on('error', function() {
     teardown();
     socket.end();
+  }
   );
 }
