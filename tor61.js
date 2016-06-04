@@ -116,7 +116,7 @@ function buildCircuit(onCircuitCompletion) {
     } else {
       // randomly pick first hop
       firstNode = resultList[Math.floor(Math.random()*resultList.length)];
-      firstNode["host"] = firstNode.service_addr.address;
+      firstNode["host"] = torutils.parseIP(firstNode.service_addr.address);
       firstNode["port"] = firstNode.service_addr.port;
       function failCallback() {
         console.log("Failed");
@@ -124,17 +124,17 @@ function buildCircuit(onCircuitCompletion) {
       }
       torutils.createFirstHop(firstNode.host, firstNode.port, nodeID, firstNode.service_data, function() {
         secondNode = resultList[Math.random(0, resultList.length)];
-        secondNode["host"] = firstNode.service_addr.address;
+        secondNode["host"] = torutils.parseIP(firstNode.service_addr.address);
         secondNode["port"] = firstNode.service_addr.port;
 
         // TODO: double check function portrait
         torutils.extendTorConnection(secondNode.host, secondNode.port, secondNode.service_data, generateCircID(true), function() {
           thirdNode = resultList[Math.random(0, resultList.length)];
-          thirdNode["host"] = firstNode.service_addr.address;
+          thirdNode["host"] = torutils.parseIP(firstNode.service_addr.address);
           thirdNode["port"] = firstNode.service_addr.port;
           torutils.extendTorConnection(thirdNode.host, thirdNode.port, thirdNode.service_data, generateCircID(true), function() {
             endNode = resultList[Math.random(0, resultList.length)];
-            endNode["host"] = firstNode.service_addr.address;
+            endNode["host"] = torutils.parseIP(firstNode.service_addr.address);
             endNode["port"] = firstNode.service_addr.port;
             torutils.extendTorConnection(endNode.host, endNode.port, endNode.service_data, generateCircID(true), onCircuitCompletion, failCallback);
           }, failCallback);

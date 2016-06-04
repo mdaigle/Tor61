@@ -1,6 +1,7 @@
 const crypto = require('crypto');
-require('./routerloop');
+var routerloop = require('./routerloop');
 var net = require('net');
+var protocol = require('./protocol');
 
 exports.parseIP = function(ip_as_int) {
     buf = new Buffer(4);

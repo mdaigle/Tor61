@@ -12,7 +12,7 @@
 //
 //
 //
-var Buffer = require('buffer');
+require('buffer');
 var net = require('net');
 var mappings = require('./mappings');
 var protocol = require('./protocol');
