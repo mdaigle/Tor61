@@ -170,8 +170,6 @@ exports.startClientLoop = function(nid, proxyPort) {
                         // each callback should have a static definition (?)
 
                         var body = new Buffer(hostname + ":" + port + "\0");
-                        var relay_begin_cell = protocol.packRelay(mappings.BASE_CIRC_ID, stream_id, protocol.RELAY_BEGIN, body);
-                        console.log(relay_begin_cell.toString());
                         // first_hop_socket.write(relay_begin_cell);
 
                         torutils.sendWithPromise(protocol.sendRelay, function() {
