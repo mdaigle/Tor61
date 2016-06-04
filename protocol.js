@@ -187,4 +187,15 @@ exports.unpackRelay = function(message_buffer) {
     return msg;
 }
 
+exports.parseNodeAddr = function(message_buffer) {
+  ret = {};
+  // TODO: determine encoding
+  var addr = message_buffer.toString(undefined, 0, message_buffer.length-5);
+  ret["agent_id"] = messageBuffer.readUInt32BE(message_buffer.length-4);
+  var addrSplit = addr.split(":");
+  ret["ip"] = addrSplit[0];
+  ret["port"] = addrSplit[1];
+  return ret;
+}
+
 Object.freeze(exports);

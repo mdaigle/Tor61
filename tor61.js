@@ -122,7 +122,9 @@ function buildCircuit(onCircuitCompletion) {
         console.log("Failed");
         buildCircuit(onCircuitCompletion);
       }
-      torutils.createFirstHop(firstNode.host, firstNode.port, nodeID, firstNode.service_data, function() {
+      firstCircID = torutils.generateCircID((mappings.getNodeToSocketMapping(firstNode.service_data) == null));
+      torutils.createFirstHop(firstNode.host, firstNode.port, nodeID, firstNode.service_data, firstCircID, function() {
+        mappings.BASE_CIRC_ID = firstCircID;
         secondNode = resultList[Math.random(0, resultList.length)];
         secondNode["host"] = torutils.parseIP(firstNode.service_addr.address);
         secondNode["port"] = firstNode.service_addr.port;

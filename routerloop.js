@@ -5,27 +5,17 @@
 //  If the client closes a connection we assume the end server was
 //  unreachable/timedout
 //
-//  Also do callbacks for all send functions
-//
-//  Implement Global Event Emitter usage keyed on streamID
-//
 //  TODO: handle socket errors nicely.
 //
-//
+//  TODO: if we try to get a bad or missing mapping of any kind we should handle
+//  appropriately (i.e. a node shut down and the circuit no longer exists we
+//  should give up and if it is our circuit we should try to rebuild)
 require('buffer');
 var net = require('net');
 var mappings = require('./mappings');
 var protocol = require('./protocol');
 var serverloop = require('./serverloop');
 var torutils = require('./torutils');
-
-
-// Note: send functions that should use this include:
-//  sendCreate
-//  sendOpen
-//  sendRelay
-//
-// Timeout callback should be function(){rej();}
 
 exports.socketSetup = function(socket, nodeID, createdByUs) {
   if (!createdByUs) {
@@ -42,6 +32,7 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
   var bytesRead = 0;
   var otherNodeID = null;
   var teardown = function () {};
+  var socketValidated = false;
   socket.on('data', function (data) {
     // buffer until 512 bytes
     // dataBuffer.append(data);
@@ -58,9 +49,8 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
         console.log("bad message");
         return;
       }
-      socketValidated = false;
       msgFields = protocol.unpack(command, msg);
-      // TODO: These should all check if socket is validated before handling
+      // reassign teardown now that items are in scope
       teardown = function(){
         if (otherNodeID != null) {
           mappings.removeNodeToSocketMapping(otherNodeID); 
@@ -69,7 +59,6 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
           }
         }
         socket.end();
-        // TODO: reject all messages
         if (protocol.OPEN in msgMap && "reject" in msgMap[protocol.OEPN]) {
           msgMap[protocol.OPEN].reject();
         }
@@ -91,24 +80,7 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
         }
       };
 
-      if (!socketValidated && (command != protocol.OPEN && commmand != protocol.OPENED && command != protocol.OPEN_FAILED)) {
-        teardown();
-        return;
-      }
-      switch (command) {
-        // may need a concept of last msg sent or any outstanding circuit
-        // building/setup messages
-        case protocol.OPEN:
-          clearTimeout(openTimeout);
-          // assert destNodeID == nodeID
-          if (msgFields.opened_id != nodeID) {
-            protocol.sendOpenFailed(socket, msgFields.opener_id, msgFields.opened_id);
-          }
-          // do we already have a mapping?
-          mappings.addNodeToSocketMapping(msgFields.opener_id, socket);
-          protocol.sendOpened(socket, msgFields.opener_id, msgFields.opened_id);
-          if (!createdByUs) {
-            socketValidated = true;
+      if (!socketValidated = true;
           }
           otherNodeID = msgFields.opened_id;
 
@@ -183,45 +155,45 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
                 });
               case protocol.RELAY_DATA:
                 // get streamID and find socket, forward data
-                destSock = mappings.getStreamToSocketMapping(msgFields.stream_id);
+                destSock = mappings.getStreamToSocketMapping(otherNodeID, circID, msgFields.stream_id);
                 if (destSock) {
                   destSock.write(msgFields.body);
                 }
 
               case protocol.RELAY_END:
                 // remove mappings, close socket to server
-                destSock = mappings.getStreamToSocketMapping(msgFields.stream_id);
-                // TODO: send event to streamID if malcolm wants
-                // TODO: streamIDs should be unique on a circuit
+                destSock = mappings.getStreamToSocketMapping(otherNodeID, circID, msgFields.stream_id);
                 destSock.end();
-                mappings.removeStreamToSocketMapping(msgFields.stream_id);
+                mappings.removeStreamToSocketMapping(otherNodeID, circID, msgFields.stream_id);
 
               case protocol.RELAY_CONNECTED:
-                // TODO: send event to streamID
-                // TODO: event emitter should multiplex nodeID/circID and
-                // streamID because streamIDs aren't unique globally
+                // TODO: can't just publish to streamID because not globally
+                // unique
                 if (msgMap[protocol.RELAY][protocol.RELAY_BEGIN][msgFields.stream_id]) {
                   msgMap[protocl.RELAY][protocol.RELAY_BEGIN][msgFields.stream_id].resolve();
                   clearTimeout(msgMap[protocol.RELAY][protocol.RELAY_BEGIN][msgFields.stream_id].timeout);
                 }
 
               case protocol.RELAY_EXTEND:
-                /*
-                // TODO: if extending to self put mapping from circ to null
-                // create connection to server as specified
                 // TODO: parse host and port
-                // TODO: we should partition this into another file
-                var newSock = net.createConnection({host: host, port: port});
-                this.socketSetup(newSock, nodeID, true);
-                newSock.msgMap[protocol.OPEN] = function(response) {
-                  if (response == protocol.OPENED) {
-                    // send create
-                  } else {
-                    // return relay_extend_failed
-                  }
-                };
-                // TODO: send Open with timeout that returns relay_extend_failed
-                */
+                // TODO: make parseString in torutils
+                var nodeFields = protocol.parseNodeAddr(msgFields.body);
+                var newHost = nodeFields.ip;
+                var newPort = nodeFields.port;
+                var newID = nodeFields.agent_id;
+                if (newID == nodeID) {
+                  mappings.addCircuitMapping(otherNodeID, circID, null, null);
+                  torutils.sendWithoutPromise(protocol.sendRelay)(socket, circID, 0, protocol.RELAY_EXTENDED, null);
+                } else {
+                  var newCircID = torutils.generateCircID((mapings.getNodeToSocketMapping(newID) == null));
+                  torutils.createFirstHop(newNost, newPort, nodeID, newID, function() {
+                    mappings.addCircuitMapping(otherNodeID, circID, newID, newCircID);
+                    torutils.sendWithoutPromise(protocol.sendRelay)(socket, circID, 0, protocol.RELAY_EXTENDED, null);
+                  }, function() {
+                    torutils.sendWithoutPromise(protocol.sendRelay)(responseSock, circID, 0, protocol.RELAY_EXTEND_FAILED, null);
+                  });
+                }
+                
               case protocol.RELAY_EXTENDED:
                 // execute callback
                 if (msgMap[protocol.RELAY][protocol.RELAY_EXTEND][msgFields.stream_id]) {
@@ -231,7 +203,6 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
 
               case protocol.RELAY_BEGIN_FAILED:
                 // close socket or server 404 etc.
-                // TODO: send event to streamID
                 if (msgMap[protocol.RELAY][protocol.RELAY_BEGIN][msgFields.stream_id]) {
                   msgMap[protocol.RELAY][protocol.RELAY_BEGIN][msgFields.stream_id].reject();
                   clearTimeout(msgMap[protocol.RELAY][protocol.RELAY_BEGIN][msgFields.stream_id].timeout)
@@ -243,7 +214,6 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
                   msgMap[protocol.RELAY][protocol.RELAY_EXTEND][msgFields.stream_id].reject();
                   clearTimeout(msgMap[protocol.RELAY][protocol.RELAY_EXTEND][msgFields.stream_id].timeout)
                 }
-
             }
           } else {
             dstSock = mappings.getNodeToSocketMapping(destInfo.nid);

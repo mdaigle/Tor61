@@ -9,7 +9,7 @@ require('dns');
 var torutils = require('./torutils');
   
 exports.initiateConnection = function(msgFields, otherNodeID, circID, resolve, reject) {
-  var addrStr = parseString(msgFields.body);
+  var addrStr = msgFields.body.toString(undefined, 0, msgFields.body.length-1);
   var streamID = msgFields.stream_id;
   var addrSplit = addrStr.split(":"); // TODO: this may need work
   var hostname = addrSplit[0];
@@ -46,7 +46,7 @@ exports.initiateConnection = function(msgFields, otherNodeID, circID, resolve, r
         var numBytesSent = 0;
         while (numBytesSent < data.length) {
           segmentLength = Math.min(protocol.maxRelayBodyLength, data.length-numBytesSent);
-          protocol.sendRelay(destSock, circID, streamID, protocol.RELAY_DATA, data.slice(numBytesSent, numBytesSent + segmentLength));
+          torutils.sendWithoutPromise(protocol.sendRelay)(destSock, circID, streamID, protocol.RELAY_DATA, data.slice(numBytesSent, numBytesSent + segmentLength));
           numBytesSent += segmentLength;
         }
       } 

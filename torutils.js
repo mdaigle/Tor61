@@ -25,7 +25,7 @@ exports.generateNodeID = function(ip, port) {
 
 var oddCircID = 1;
 var evenCircID = 2;
-function generateCircID(odd) {
+exports.generateCircID = function(odd) {
     if (odd) {
         id = oddCircID;
         oddCircID += 2;
@@ -40,7 +40,13 @@ function packExtendBody(host, port, receiverID) {
     return host.toString() + ":" + port.toString() + "\0" + receiverID.toString();
 }
 
-exports.sendWithPromise = function(sendFunction, successCallback, failCallback) {
+// Note: send functions that should use this include:
+//  sendCreate
+//  sendOpen
+//  sendRelay
+//
+// Timeout callback should be function(){rej();}
+eexports.sendWithPromise = function(sendFunction, successCallback, failCallback) {
   var ret = null;
   var p = new Promise(function(resolve, reject) {
     ret = sendFunction.bind(null, resolve, reject);
@@ -59,7 +65,11 @@ exports.sendWithoutPromise = function(sendFunction) {
 }
 
 exports.openTorConnection = function(host, port, nodeID, receiverID, successCallback, failCallback) {
-  newSock = net.createConnection({host: host, port:port});
+  // check if already have a socket
+  newSock = mappings.getNodeToSocketMapping(receiverID);
+  if (newSock == null) {
+    newSock = net.createConnection({host: host, port:port});
+  }
   routerloop.socketSetup(newSock, nodeID, true);
   exports.sendWithPromise(protocol.sendOpen, successCallback, failCallback)(newSock, nodeID, receiverID);
 }
@@ -74,9 +84,9 @@ exports.extendTorConnection = function(host, port, receiverID, circID, successCa
   exports.sendWithPromise(protocol.sendRelay, successCallback, failCallback)(socket, circID, 0, protocol.RELAY_EXTEND, bodyBuf);
 }
 
-exports.createFirstHop = function(host, port, nodeID, receiverID, successCallback, failCallback) {
+exports.createFirstHop = function(host, port, nodeID, receiverID, circID, successCallback, failCallback) {
   openSuccessCallback = function() {
-    circID = generateCircID(true);
+    //circID = generateCircID(true);
     exports.createTorCircuit(receiverID, circID, successCallback, failCallback);
   }
   exports.openTorConnection(host, port, nodeID, receiverID, openSuccessCallback, failCallback);
