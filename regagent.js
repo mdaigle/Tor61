@@ -20,6 +20,7 @@ var socket_out = dgram.createSocket('udp4');
 // console.log(socket_out);
 var socket_in = dgram.createSocket('udp4');
 var reg_service_address;
+var local_address;
 
 
 exports.setupRegAgent = function(callback) {
