@@ -67,10 +67,11 @@ exports.sendCreate = function(res, rej, socket, circuit_id) {
     cell = packCreate(circuit_id);
     console.log("packed with ID" + circuit_id);
     socket.msgMap[CREATE][circuit_id] = {resolve: res, reject: rej, timeout: setTimeout(function(){console.log("timeout");rej();}, TIMEOUT)};
-    console.log(socket.msgMap);
-    console.log("added msg Map for create");
+    //console.log(socket.UUID);
+    //console.log(socket.msgMap);
+    //console.log("added msg Map for create");
     socket.write(cell);
-    console.log("sent message");
+    //console.log("sent message");
 }
 
 function packCreated(circuit_id) {
@@ -107,7 +108,7 @@ exports.sendOpen = function(res, rej, socket, sender_id, receiver_id) {
     //console.log(socket.msgMap);
     socket.msgMap[OPEN] = {resolve: res, reject: rej, timeout: setTimeout(function(){console.log("timeout");rej();}, TIMEOUT)};
     //console.log(socket.msgMap);
-    console.log("ADDED TO MAP");
+    //console.log("ADDED TO MAP");
     socket.write(cell);
 }
 
@@ -171,7 +172,6 @@ exports.sendCreateFailed = function(socket, circuit_id) {
 
 // Body parameter should be a buffer.
 function packRelay(circuit_id, stream_id, relay_command, body) {
-    body = Buffer(body);
     var body_length;
     if (body == null) {body_length = 0;
     } else { body_length = body.length; }
@@ -191,21 +191,21 @@ function packRelay(circuit_id, stream_id, relay_command, body) {
 }
 
 exports.sendRelay = function(res, rej, socket, circuit_id, stream_id, relay_command, body) {
-  console.log("in relay");
+  console.log("in relay" + relay_command);
   cell = packRelay(circuit_id, stream_id, relay_command, body);
-  console.log("packed relay");
+  //console.log("packed relay");
   if (rej || res) {
-    console.log("adding mappings");
+    //console.log("adding mappings");
     var data = {resolve: res, reject: rej};
-    console.log("added resrej");
+    //console.log("added resrej");
     data["timeout"] = setTimeout(function(){console.log("TIMEOUT");rej();}, TIMEOUT);
-    console.log("added timeout to data");
-    console.log(socket.msgMap);
-    console.log(socket.msgMap[RELAY]);
-    console.log(relay_command);
+    //console.log("added timeout to data");
+    //console.log(socket.msgMap);
+    //console.log(socket.msgMap[RELAY]);
+    //console.log(relay_command);
     socket.msgMap[RELAY][relay_command][stream_id] = data;//{resolve: res, reject: rej, timeout:setTimeout(function(){rej();}, TIMEOUT)};
   }
-  console.log("added mappings");
+  //console.log("added mappings");
  socket.write(cell);
 
 }

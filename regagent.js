@@ -227,13 +227,13 @@ function send_fetch(service_name){
     last_msg_timeout = setTimeout(function(){msgTimeout(errMsg);}, msg_timeout);
 }
 
-function send_unregister(port){
+function send_unregister(ip, port){
     if (port in port_map) {
         clearTimeout(port_map[port]['timeout']);
     }
     delete port_map[port];
 
-    msg = protocol.packUnregister(get_sequence_num(), local_address, port);
+    msg = protocol.packUnregister(get_sequence_num(), ip, port);
     send(msg, socket_out, function(){
         last_msg_sent = protocol.UNREGISTER;
     });
@@ -477,8 +477,9 @@ exports.register = function(port, service_data, service_name, callback) {
 
 exports.unregister = function(port, callback) {
     processQueue(function(){
-        send_unregister(port);
-    }, protocol.ACK, callback);
+        send_unregister(getThisHostIP(), port);
+    }, protocol.ACK, null);
+    processQueue(callback, null, null);
 }
 
 exports.fetch = function(service_name, callback) {

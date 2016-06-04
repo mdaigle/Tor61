@@ -7,7 +7,11 @@ var node_to_socket_map = {};
 
 exports.addNodeToSocketMapping = function(nid, socket) {
     //TODO: check for overwrites?
-    node_to_socket_map[nid] = socket;
+    if (nid in node_to_socket_map && node_to_socket_map[nid] != null) {
+      // ignore
+    } else {
+      node_to_socket_map[nid] = socket;
+    }
 }
 
 exports.removeNodeToSocketMapping = function(nid) {

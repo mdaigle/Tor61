@@ -38,7 +38,16 @@ exports.generateCircID = function(odd) {
 }
 
 function packExtendBody(host, port, receiverID) {
-    return host.toString() + ":" + port.toString() + "\0" + receiverID.toString();
+    console.log("a");
+    agent_id = new Buffer(4);
+    console.log("b");
+    agent_id.writeUInt32BE(receiverID, 0);
+    console.log("c");
+    tempStr = host.toString() + ":" + port.toString() + "\0";
+    console.log("d");
+    tempBuf = new Buffer(tempStr);
+    console.log("e");
+    return Buffer.concat([tempBuf, agent_id]);
 }
 
 // Note: send functions that should use this include:
@@ -58,7 +67,7 @@ exports.sendWithPromise = function(sendFunction, successCallback, failCallback) 
   p.catch(function() {
     failCallback();
   });
-  console.log("created promise");
+  // console.log("created promise");
   return ret;
 }
 
@@ -71,30 +80,33 @@ exports.openTorConnection = function(host, port, nodeID, receiverID, successCall
   newSock = mappings.getNodeToSocketMapping(receiverID);
   if (newSock == null) {
     newSock = net.createConnection({host: host, port:port});
-  }
-  console.log("created new socket");
+    newSock.UUID = Math.random()*10000;
+   console.log("created new socket");
   routerloop.socketSetup(newSock, nodeID, true);
+  }
   exports.sendWithPromise(protocol.sendOpen, successCallback.bind(null, newSock), failCallback)(newSock, nodeID, receiverID);
   console.log("sent open");
 }
 
 exports.createTorCircuit = function(nodeID, circID, successCallback, failCallback) {
-  console.log("sending create");
+  //console.log("sending create");
   var socket = mappings.getNodeToSocketMapping(nodeID);
   var temp = exports.sendWithPromise(protocol.sendCreate, successCallback, failCallback);
-  console.log("actually try to send");
+  //console.log("actually try to send");
   temp(socket, circID);
   console.log("sent create");
-  console.log(socket.msgMap);
+  //console.log(socket.UUID);
+  //console.log(socket.msgMap);
 }
 
 exports.extendTorConnection = function(host, port, receiverID, circID, successCallback, failCallback) {
   console.log("in extend");
   var bodyBuf = packExtendBody(host, port, receiverID);
+  console.log("passed Pack");
   var socket = mappings.getNodeToSocketMapping(receiverID);
   console.log("packed");
   exports.sendWithPromise(protocol.sendRelay, successCallback, failCallback)(socket, circID, 0, protocol.RELAY_EXTEND, bodyBuf);
-  console.log("sent with promise");
+  console.log("sent extend with promise");
 }
 
 exports.createFirstHop = function(host, port, nodeID, receiverID, circID, successCallback, failCallback) {
@@ -102,7 +114,7 @@ exports.createFirstHop = function(host, port, nodeID, receiverID, circID, succes
     //circID = generateCircID(true);
     mappings.addNodeToSocketMapping(receiverID, newSock);
     console.log("open success");
-    console.log(newSock.msgMap);
+    //console.log(newSock.msgMap);
     exports.createTorCircuit(receiverID, circID, successCallback, failCallback);
   }
   exports.openTorConnection(host, port, nodeID, receiverID, openSuccessCallback, failCallback);

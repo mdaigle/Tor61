@@ -116,6 +116,7 @@ exports.unpackFetchResponse = function(message_buffer) {
             },
             service_data: message_buffer.readUInt32BE(entry_offset + 6)
         };
+        console.log("service_data: " + entry.service_data);
 
         msg.entries.push(entry);
     }

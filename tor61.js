@@ -27,10 +27,11 @@ var nodeID = torutils.generateNodeID();
 console.log("nodeID:" + nodeID);
 var args = process.argv.slice(2);
 var torNodePort =  1461;//args[0]; // CHANGE
-
+var SID = 11;
 
 // need mapping from nodes -> sockets
 var torNode = net.createServer((socket) => {
+  socket.UUID = SID++;
   routerloop.socketSetup(socket, nodeID, false);
 });
 
@@ -151,12 +152,12 @@ function buildCircuit(onCircuitCompletion) {
         console.log("first node success");
         mappings.BASE_CIRC_ID = firstCircID;
         do {
-        console.log("in loop");
+        //console.log("in loop");
         secondNode = resultList[Math.floor(Math.random()*resultList.length)];
         secondNode["host"] = torutils.parseIP(firstNode.service_addr.address);
         secondNode["port"] = firstNode.service_addr.port;
         numLayers -= 1;
-        console.log("end of loop");
+        //console.log("end of loop");
         } while (secondNode.service_data == nodeID && numLayers >= 0);
         console.log("second");
         // TODO: double check function portrait
@@ -171,7 +172,9 @@ function buildCircuit(onCircuitCompletion) {
           } while(thirdNode.service_data == nodeID && numLayers >= 0);
           console.log("third");
           if (numLayers > 0) {
-          torutils.extendTorConnection(thirdNode.host, thirdNode.port, thirdNode.service_data, generateCircID(true), function() {
+            console.log("extending");
+            torutils.extendTorConnection(thirdNode.host, thirdNode.port, thirdNode.service_data, torutils.generateCircID(true), function() {
+            console.log("third success");
             do {
             endNode = resultList[Math.floor(Math.random() *resultList.length)];
             endNode["host"] = torutils.parseIP(firstNode.service_addr.address);
@@ -180,12 +183,14 @@ function buildCircuit(onCircuitCompletion) {
             } while(endNode.service_data == nodeID && numLayers >= 0);
             console.log("end");
             if (numLayers > 0) {
-            torutils.extendTorConnection(endNode.host, endNode.port, endNode.service_data, generateCircID(true), onCircuitCompletion, failCallback);
+            console.log("extending");
+            torutils.extendTorConnection(endNode.host, endNode.port, endNode.service_data, torutils.generateCircID(true), onCircuitCompletion, failCallback);
             } else {
               onCircuitCompletion();
             }
           }, failCallback);
           } else {
+            console.log("no fourth");
             onCircuitCompletion();
           }
         }, failCallback);
@@ -220,12 +225,13 @@ rl.on('close', () => {
   // teardown fn
 });
 
+
 regagent.setupRegAgent(function(){
+    regagent.unregister(torNodePort, function() {
     buildCircuit(function(){regagent.register(torNodePort, nodeID, "daigle-tsen", function(){console.log("registered");
 rl.resume();
 })});
-});
-
+});});
 /*
  * If routerList is empty and no other nodes exist,
  * leave global circID null or some known self-constant

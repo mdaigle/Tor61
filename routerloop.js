@@ -18,6 +18,7 @@ var serverloop = require('./serverloop');
 var torutils = require('./torutils');
 
 exports.socketSetup = function(socket, nodeID, createdByUs) {
+  console.log("setting up socket");
   if (!createdByUs) {
     openTimeout = setTimeout(function() {
       socket.end();
@@ -29,11 +30,22 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
   msgMap[protocol.RELAY] = {};
   msgMap[protocol.RELAY][protocol.RELAY_BEGIN] = {};
   msgMap[protocol.RELAY][protocol.RELAY_EXTEND] = {};
-  console.log("BASE MAP");
-  console.log(msgMap);
+  //console.log("BASE MAP");
+  //console.log(socket.UUID);
+  //console.log(msgMap);
   
   // each entry should be {resolve: , reject:, timeout:}
   socket["msgMap"] = msgMap;
+  Object.observe(socket.msgMap[protocol.CREATE], function(changes) {
+   // console.log(socket.UUID);
+   // console.log("================================================");
+   // console.log(changes);
+  });
+  Object.observe(msgMap[protocol.CREATE], function(changes) {
+   // console.log("++++++++++++++++++++++++++++++++++++++++++++++++");
+   // console.log(changes);
+   // console.log(msgMap);
+  });
   var dataBuffer = new Buffer(0);
   var bytesRead = 0;
   var otherNodeID = null;
@@ -116,10 +128,11 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
           mappings.addNodeToSocketMapping(msgFields.opened_id, socket);
           if (protocol.OPEN in msgMap && msgMap[protocol.OPEN] != null) {
             //console.log(socket.msgMap);
-            console.log(msgMap);
+            //console.log(socket.UUID);
+            // console.log(msgMap);
             msgMap[protocol.OPEN].resolve();
             clearTimeout(msgMap[protocol.OPEN].timeout);
-            //delete msgMap[protocol.OPEN];
+            delete msgMap[protocol.OPEN];
           }
           otherNodeID = msgFields.opened_id;
           break;
@@ -131,7 +144,7 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
           if (protocol.OPEN in msgMap && msgMap[protocol.OPEN] != null) {
             msgMap[protocol.OPEN].reject();
             clearTimeout(msgMap[protocol.OPEN].timeout);
-            //delete msgMap[protocol.OPEN];
+            delete msgMap[protocol.OPEN];
           }
           break;
 
@@ -146,10 +159,11 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
           console.log("received created on " + circID);
           mappings.addCircuitMapping(otherNodeID, circID, null, null);
           if (protocol.CREATE in msgMap && msgMap[protocol.CREATE] != null) {
-            console.log(msgMap);
+            // console.log(socket.UUID);
+            // console.log(msgMap);
             msgMap[protocol.CREATE][circID].resolve();
             clearTimeout(msgMap[protocol.CREATE][circID].timeout);
-            //delete msgMap[protocol.CREATE][circID];
+            delete msgMap[protocol.CREATE][circID];
           }
           break;
 
@@ -159,7 +173,7 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
           if (protocol.CREATE in msgMap && msgMap[protocol.CREATE] != null) {
             msgMap[protocol.CREATE][circID].reject();
             clearTimeout(msgMap[protocol.CREATE][circID].timeout);
-            //delete msgMap[protocol.CREATE][circID];
+            delete msgMap[protocol.CREATE][circID];
           }
           break;
 
