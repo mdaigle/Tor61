@@ -193,7 +193,7 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
             switch (msgFields.relay_command) {
               case protocol.RELAY_BEGIN:
                 (new Promise(function(resolve, reject){
-                  serverloop.initiateConnection(msgFields, otherNodeID, circID);
+                  serverloop.initiateConnection(msgFields, otherNodeID, circID, resolve, reject);
                 })).then(function(){
                   torutils.sendWithoutPromise(protocol.sendRelay)(socket, circID, msgFields.stream_id, protocol.RELAY_CONNECTED, null);
                 }).catch(function() {
