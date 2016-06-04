@@ -5,7 +5,7 @@
 
 var net = require('net');
 var dns = require('dns');
-var mapping = require('./mappings');
+var mappings = require('./mappings');
 var protocol = require('./protocol');
 // var clientloop = require('./clientloop'); ??????????????
 var serverloop = require('./serverloop');
@@ -100,26 +100,46 @@ torNode.listen(torNodePort); // can add callback
 //
 // }
 
-// TODO:
+// TODO: fix parsing of host port
 function buildCircuit(onCircuitCompletion) {
-  regagent.fetch("daigle-tsen", function(resultList) {
-    // randomly pick first hop
-    firstNode = resultList[Math.random(0, resultList.length)];
-    function failCallback() {
-      console.log("Failed");
-      buildCircuit(onCircuitCompletion);
+  regagent.fetch("daigle-tsen", function(response) {
+    if (!("entries" in response)) {
+      console.log("reg fail");
+      return;
     }
-    torutils.createFirstHop(firstNode.host, firstNode.port, nodeID, firstNode.data, function() {
-      secondNode = resultList[Math.random(0, resultList.length)];
-      // TODO: double check function portrait
-      torutils.extendTorConnection(secondNode.host, secondNode.port, secondNode.data, generateCircID(true), function() {
-        thirdNode = resultList[Math.random(0, resultList.length)];
-        torutils.extendTorConnection(thirdNode.host, thirdNode.port, thirdNode.data, generateCircID(true), function() {
-          endNode = resultList[Math.random(0, resultList.length)];
-          torutils.extendTorConnection(endNode.host, endNode.port, endNode.data, generateCircID(true), onCircuitCompletion, failCallback);
+    resultList = response["entries"];
+    
+    if (resultList.length <= 0) {
+      mappings.BASE_CIRC_ID = 0;
+      onCircuitCompletion();
+    } else {
+      // randomly pick first hop
+      firstNode = resultList[Math.random(0, resultList.length)];
+      firstNode["host"] = firstNode.service_addr.address;
+      firstNode["port"] = firstNode.service_addr.port;
+      function failCallback() {
+        console.log("Failed");
+        buildCircuit(onCircuitCompletion);
+      }
+      torutils.createFirstHop(firstNode.host, firstNode.port, nodeID, firstNode.data, function() {
+        secondNode = resultList[Math.random(0, resultList.length)];
+        secondNode["host"] = firstNode.service_addr.address;
+        secondNode["port"] = firstNode.service_addr.port;
+      
+        // TODO: double check function portrait
+        torutils.extendTorConnection(secondNode.host, secondNode.port, secondNode.data, generateCircID(true), function() {
+          thirdNode = resultList[Math.random(0, resultList.length)];
+          thirdNode["host"] = firstNode.service_addr.address;
+          thirdNode["port"] = firstNode.service_addr.port;
+          torutils.extendTorConnection(thirdNode.host, thirdNode.port, thirdNode.data, generateCircID(true), function() {
+            endNode = resultList[Math.random(0, resultList.length)];
+            endNode["host"] = firstNode.service_addr.address;
+            endNode["port"] = firstNode.service_addr.port;
+            torutils.extendTorConnection(endNode.host, endNode.port, endNode.data, generateCircID(true), onCircuitCompletion, failCallback);
+          }, failCallback);
         }, failCallback);
       }, failCallback);
-    }, failCallback);
+    }
   });
 }
 regagent.setupRegAgent(function(){
