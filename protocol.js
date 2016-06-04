@@ -50,7 +50,7 @@ function packCreate(circuit_id) {
 exports.sendCreate = function(res, rej, socket, circuit_id) {
     cell = packCreate(circuit_id);
     socket.write(cell);
-    socket.msgMap[protocol.CREATE] = {resolve: res, reject: rej, timeout: setTimeout(function(){rej();}, TIMEOUT)};
+    socket.msgMap[CREATE] = {resolve: res, reject: rej, timeout: setTimeout(function(){rej();}, TIMEOUT)};
 }
 
 function packCreated(circuit_id) {
@@ -85,7 +85,7 @@ function packOpen(sender_id, receiver_id) {
 exports.sendOpen = function(res, rej, socket, sender_id, receiver_id) {
     cell = packOpen(sender_id, receiver_id);
     socket.write(cell);
-    socket.msgMap[protocol.OPEN] = {resolve: res, reject: rej, timeout: setTimeout(function(){rej();}, TIMEOUT)};
+    socket.msgMap[OPEN] = {resolve: res, reject: rej, timeout: setTimeout(function(){rej();}, TIMEOUT)};
 }
 
 exports.unpackOpen = function(message_buffer) {
@@ -172,7 +172,7 @@ exports.sendRelay = function(res, rej, socket, circuit_id, stream_id, relay_comm
   cell = packRelay(circuit_id, stream_id, relay_command, body);
   socket.write(cell);
   if (rej || res) {
-    socket.msgMap[protocol.RELAY][relay_command][stream_id] = {resolve: res, reject: rej, timeout:setTimeout(function(){rej();}, TIMEOUT)};
+    socket.msgMap[RELAY][relay_command][stream_id] = {resolve: res, reject: rej, timeout:setTimeout(function(){rej();}, TIMEOUT)};
   }
 }
 
