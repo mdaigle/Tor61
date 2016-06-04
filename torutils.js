@@ -1,6 +1,16 @@
 const crypto = require('crypto');
 require('./routerloop');
 
+exports.parseIP(ip_as_int) {
+    buf = new Buffer(4);
+    buf.writeUInt32BE(ip_as_int);
+    ip = buf.readUInt8(0).toString() + "." +
+        buf.readUInt8(1).toString() + "." +
+        buf.readUInt8(2).toString() + "." +
+        buf.readUInt8(3).toString();
+    return ip;
+}
+
 exports.generateNodeID = function(ip, port) {
     //TODO: legit hash at some point?
     /*var components = ip.split('.');
