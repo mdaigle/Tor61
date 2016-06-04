@@ -45,11 +45,20 @@ exports.startClientLoop = function(nid, proxyPort) {
         var stream_id = getNewStreamID();
 
         clientSocket.on('end', function() {
-            torutils.sendWithoutPromise(protocol.sendRelay(first_hop_socket, circuit_id, stream_id, protocol.RELAY_END, null))
+            if (mappings.BASE_CIRC_ID != 0) {
+                torutils.sendWithoutPromise(protocol.sendRelay(first_hop_socket, circuit_id, stream_id, protocol.RELAY_END, null));
+            } else {
+                first_hop_socket.end();
+            }
         });
+
         clientSocket.on('error', function(err) {
             clientSocket.end();
-            torutils.sendWithoutPromise(protocol.sendRelay(first_hop_socket, circuit_id, stream_id, protocol.RELAY_END, null))
+            if (mappings.BASE_CIRC_ID != 0) {
+                torutils.sendWithoutPromise(protocol.sendRelay(first_hop_socket, circuit_id, stream_id, protocol.RELAY_END,     null));
+            } else {
+                first_hop_socket.end();
+            }
         });
 
         // do we need to pass as an argument
