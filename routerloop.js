@@ -23,7 +23,7 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
       socket.end();
     }, protocol.TIMEOUT);
   }
-  var msgMap = {};
+  var msgMap = {"test": true};
   msgMap[protocol.OPEN] = msgMap[protocol.CREATE] = msgMap[protocol.RELAY] = {};
   msgMap[protocol.RELAY][protocol.RELAY_BEGIN] = msgMap[protocol.RELAY][protocol.EXTEND] = {};
   // each entry should be {resolve: , reject:, timeout:}
@@ -42,9 +42,10 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
       // slice out current msg
       msg = dataBuffer.slice(0, 512);
       // check command, handle appropriately
-      unpacked = unpackMainFields(msg);
+      unpacked = protocol.unpackMainFields(msg);
       circID = unpacked.circuit_id;
       command = unpacked.cell_type;
+      console.log("received: " + command);
       if (command < 0 || command > 8) {
         console.log("bad message");
         return;
@@ -106,6 +107,7 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
           }
           mappings.addNodeToSocketMapping(msgFields.opened_id, socket);
           if (protocol.OPEN in msgMap && msgMap[protocol.OPEN] != null) {
+            console.log(socket.msgMap);
             msgMap[protocol.OPEN].resolve();
             clearTimeout(msgMap[protocol.OPEN].timeout);
             delete msgMap[protocol.OPEN];

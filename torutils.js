@@ -71,12 +71,16 @@ exports.openTorConnection = function(host, port, nodeID, receiverID, successCall
   if (newSock == null) {
     newSock = net.createConnection({host: host, port:port});
   }
+  console.log("created new socket");
   routerloop.socketSetup(newSock, nodeID, true);
   exports.sendWithPromise(protocol.sendOpen, successCallback, failCallback)(newSock, nodeID, receiverID);
+  console.log("sent open");
 }
 
 exports.createTorCircuit = function(nodeID, circID, successCallback, failCallback) {
+  console.log("sending create");
   exports.sendWithPromise(protocol.sendCreate, successCallback, failCallback)(socket, circID);
+  console.log("sent create");
 }
 
 exports.extendTorConnection = function(host, port, receiverID, circID, successCallback, failCallback) {
@@ -88,6 +92,7 @@ exports.extendTorConnection = function(host, port, receiverID, circID, successCa
 exports.createFirstHop = function(host, port, nodeID, receiverID, circID, successCallback, failCallback) {
   openSuccessCallback = function() {
     //circID = generateCircID(true);
+    console.log("open success");
     exports.createTorCircuit(receiverID, circID, successCallback, failCallback);
   }
   exports.openTorConnection(host, port, nodeID, receiverID, openSuccessCallback, failCallback);
