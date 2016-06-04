@@ -6,11 +6,12 @@
 // when this socket or the other socket is closed teardown the stream
 require('buffer');
 require('dns');
+var torutils = require('./torutils');
   
 exports.initiateConnection = function(msgFields, otherNodeID, circID, resolve, reject) {
   var addrStr = parseString(msgFields.body);
   var streamID = msgFields.stream_id;
-  var addrSplit = addrStr.split(":");
+  var addrSplit = addrStr.split(":"); // TODO: this may need work
   var hostname = addrSplit[0];
   var port = addrSplit[1];
   var serverSocket = net.Socket();
@@ -26,6 +27,9 @@ exports.initiateConnection = function(msgFields, otherNodeID, circID, resolve, r
     serverSocket.on("connect", function() {
       serverSocket.on('error', function() {
         // TODO: send relay end
+        var destSock = mappings.getNodeToSocketMapping(otherNodeID);
+        torutils.sendWithoutPromise(protocol.sendRelay)(destSock, circID, streamID, protocol.RELAY_END, null);
+        mappings.removeStreamToSocketMapping(otherNodeID, circID, streamID);
         // TODO: remove all stream/socket mappings
         serverSocket.end();
       });

@@ -139,15 +139,11 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
 
         case protocol.CREATE:
           // add mapping and send created
-          // M: This really should be srcID, destID, circID and should be keyed
-          // on circID
           mappings.addCircuitMapping(otherNodeID, circID, null, null);
           protocol.sendCreated(socket, circID);
 
         case protocol.CREATED:
           // mapping successful
-          // Need a concept of outstanding messages with a specific node
-          // or do we?
           mappings.addCircuitMapping(otherNodeID, circID, null, null);
           if (protocol.CREATE in msgMap && msgMap[protocol.CREATE] != null) {
             msgMap[protocol.CREATE][circID].resolve();
@@ -158,7 +154,6 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
         case protocol.CREATE_FAILED:
           // we failed. Either send an extend failed OR we failed to connect to
           // the first router in our circuit and need to restart
-          // Need to know outstanding messages
           if (protocol.CREATE in msgMap && msgMap[protocol.CREATE] != null) {
             msgMap[protocol.CREATE][circID].reject();
             clearTimeout(msgMap[protocol.CREATE][circID].timeout);

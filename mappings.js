@@ -134,3 +134,11 @@ exports.getStreamToSocketMapping = function(srcID, srcCircID, srcStreamID) {
     }
     return null;
 }
+
+exports.removeStreamToSocketMapping = function(srcID, srcCircID, srcStreamID) {
+  if (srcID in stream_to_socket_map) {
+    if (srcCircID in stream_to_socket_map[srcID]) {
+      delete stream_to_socket_map[srcID][srcCircID][srcStreamID];
+    }
+  }
+}
