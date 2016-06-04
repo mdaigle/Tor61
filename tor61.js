@@ -23,7 +23,7 @@ var regagent = require('./regagent');
 //  Need way to interface with reg service
 var nodeID = torutils.generateNodeID();
 var args = process.argv.slice(2);
-var torNodePort = args[0]; // CHANGE
+var torNodePort =  1461;//args[0]; // CHANGE
 
 
 // need mapping from nodes -> sockets
