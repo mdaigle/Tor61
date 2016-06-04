@@ -79,8 +79,21 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
           }
         }
       };
-
-      if (!socketValidated = true;
+      
+      if (!socketValidated && (command != protocol.OPEN && command != protocol.OPENED && command != protocol.OPEN_FAILED)) {
+        teardown();
+        return;
+      }
+      switch(command) {
+        case protocol.OPEN:
+          clearTimeout(openTimeout);
+          if (msgFields.opened_id != nodeID) {
+            protocol.sendOpenFailed(socket, msgFields.opener_id, msgFields.opened_id);
+          }
+          mappings.addNodeToSocketMapping(msgFields.opener_id, socket);
+          protocol.sendOpened(socket, msgFields.opener_id, msgFields.opened_id);
+          if (!createdByUs) {
+            socketValidated = true; 
           }
           otherNodeID = msgFields.opened_id;
 
