@@ -24,8 +24,14 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
     }, protocol.TIMEOUT);
   }
   var msgMap = {"test": true};
-  msgMap[protocol.OPEN] = msgMap[protocol.CREATE] = msgMap[protocol.RELAY] = {};
-  msgMap[protocol.RELAY][protocol.RELAY_BEGIN] = msgMap[protocol.RELAY][protocol.EXTEND] = {};
+  msgMap[protocol.OPEN] = {};
+  msgMap[protocol.CREATE] = {};
+  msgMap[protocol.RELAY] = {};
+  msgMap[protocol.RELAY][protocol.RELAY_BEGIN] = {};
+  msgMap[protocol.RELAY][protocol.RELAY_EXTEND] = {};
+  console.log("BASE MAP");
+  console.log(msgMap);
+  
   // each entry should be {resolve: , reject:, timeout:}
   socket["msgMap"] = msgMap;
   var dataBuffer = new Buffer(0);
@@ -53,7 +59,7 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
       msgFields = protocol.unpack(command, msg);
       // reassign teardown now that items are in scope
       teardown = function(){
-        if (otherNodeID != null) {
+        /*if (otherNodeID != null) {
           mappings.removeNodeToSocketMapping(otherNodeID); 
           if (circID != null && circID != 0) {
             mappings.removeCircuitMapping(otherNodeID);
@@ -78,10 +84,11 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
               }
             }
           }
-        }
+        }*/
       };
       
       if (!socketValidated && (command != protocol.OPEN && command != protocol.OPENED && command != protocol.OPEN_FAILED)) {
+        console.log("tearing down");
         teardown();
         return;
       }
@@ -97,6 +104,7 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
             socketValidated = true; 
           }
           otherNodeID = msgFields.opened_id;
+          break;
 
         case protocol.OPENED:
           // circuit successfully added the first router
@@ -107,13 +115,14 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
           }
           mappings.addNodeToSocketMapping(msgFields.opened_id, socket);
           if (protocol.OPEN in msgMap && msgMap[protocol.OPEN] != null) {
-            console.log(socket.msgMap);
+            //console.log(socket.msgMap);
             console.log(msgMap);
             msgMap[protocol.OPEN].resolve();
             clearTimeout(msgMap[protocol.OPEN].timeout);
-            delete msgMap[protocol.OPEN];
+            //delete msgMap[protocol.OPEN];
           }
           otherNodeID = msgFields.opened_id;
+          break;
 
         case protocol.OPEN_FAILED:
           // connecting to a node failed
@@ -122,22 +131,27 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
           if (protocol.OPEN in msgMap && msgMap[protocol.OPEN] != null) {
             msgMap[protocol.OPEN].reject();
             clearTimeout(msgMap[protocol.OPEN].timeout);
-            delete msgMap[protocol.OPEN];
+            //delete msgMap[protocol.OPEN];
           }
+          break;
 
         case protocol.CREATE:
           // add mapping and send created
           mappings.addCircuitMapping(otherNodeID, circID, null, null);
           protocol.sendCreated(socket, circID);
+          break;
 
         case protocol.CREATED:
           // mapping successful
+          console.log("received created on " + circID);
           mappings.addCircuitMapping(otherNodeID, circID, null, null);
           if (protocol.CREATE in msgMap && msgMap[protocol.CREATE] != null) {
+            console.log(msgMap);
             msgMap[protocol.CREATE][circID].resolve();
             clearTimeout(msgMap[protocol.CREATE][circID].timeout);
-            delete msgMap[protocol.CREATE][circID];
+            //delete msgMap[protocol.CREATE][circID];
           }
+          break;
 
         case protocol.CREATE_FAILED:
           // we failed. Either send an extend failed OR we failed to connect to
@@ -145,22 +159,24 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
           if (protocol.CREATE in msgMap && msgMap[protocol.CREATE] != null) {
             msgMap[protocol.CREATE][circID].reject();
             clearTimeout(msgMap[protocol.CREATE][circID].timeout);
-            delete msgMap[protocol.CREATE][circID];
+            //delete msgMap[protocol.CREATE][circID];
           }
+          break;
 
         case protocol.DESTROY:
           destInfo = mappings.getCircuitMapping(otherNodeID, circID);
           otherSock = mappings.getNodeToSocketMapping(destInfo.nid);
           protocol.sendDestroy(otherSock, destInfo.circid);
           mappings.removeCircuitMapping(otherNodeID, circID);
+          break;
 
         case protocol.RELAY:
           // check if end node
           destInfo = mappings.getCircuitMapping(otherNodeID, circID);
           // DONE: add basecase circID -> null for our own circuit
-          if (destInfo.nid == null || destInfo.circid == null) {
+          if (destInfo == null || destInfo.nid == null || destInfo.circid == null) {
             // yay end node
-            switch (msgFields.relay_cmd) {
+            switch (msgFields.relay_command) {
               case protocol.RELAY_BEGIN:
                 (new Promise(function(resolve, reject){
                   serverloop.initiateConnection(msgFields, otherNodeID, circID);
@@ -169,18 +185,21 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
                 }).catch(function() {
                   torutils.sendWithoutPromise(protocol.sendRelay)(socket, circID, msgFields.stream_id, protocol.RELAY_BEGIN_FAILED, null);
                 });
+                break;
               case protocol.RELAY_DATA:
                 // get streamID and find socket, forward data
                 destSock = mappings.getStreamToSocketMapping(otherNodeID, circID, msgFields.stream_id);
                 if (destSock) {
                   destSock.write(msgFields.body);
                 }
+                break;
 
               case protocol.RELAY_END:
                 // remove mappings, close socket to server
                 destSock = mappings.getStreamToSocketMapping(otherNodeID, circID, msgFields.stream_id);
                 destSock.end();
                 mappings.removeStreamToSocketMapping(otherNodeID, circID, msgFields.stream_id);
+                break;
 
               case protocol.RELAY_CONNECTED:
                 // TODO: can't just publish to streamID because not globally
@@ -189,26 +208,31 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
                   msgMap[protocl.RELAY][protocol.RELAY_BEGIN][msgFields.stream_id].resolve();
                   clearTimeout(msgMap[protocol.RELAY][protocol.RELAY_BEGIN][msgFields.stream_id].timeout);
                 }
+                break;
 
               case protocol.RELAY_EXTEND:
                 // TODO: parse host and port
                 // TODO: make parseString in torutils
                 var nodeFields = protocol.parseNodeAddr(msgFields.body);
+                console.log(nodeFields);
                 var newHost = nodeFields.ip;
                 var newPort = nodeFields.port;
                 var newID = nodeFields.agent_id;
+                console.log("received extend");
                 if (newID == nodeID) {
+                  console.log("extended to self");
                   mappings.addCircuitMapping(otherNodeID, circID, null, null);
                   torutils.sendWithoutPromise(protocol.sendRelay)(socket, circID, 0, protocol.RELAY_EXTENDED, null);
                 } else {
-                  var newCircID = torutils.generateCircID((mapings.getNodeToSocketMapping(newID) == null));
-                  torutils.createFirstHop(newNost, newPort, nodeID, newID, function() {
+                  var newCircID = torutils.generateCircID((mappings.getNodeToSocketMapping(newID) == null));
+                  torutils.createFirstHop(newHost, newPort, nodeID, newID, function() {
                     mappings.addCircuitMapping(otherNodeID, circID, newID, newCircID);
                     torutils.sendWithoutPromise(protocol.sendRelay)(socket, circID, 0, protocol.RELAY_EXTENDED, null);
                   }, function() {
                     torutils.sendWithoutPromise(protocol.sendRelay)(responseSock, circID, 0, protocol.RELAY_EXTEND_FAILED, null);
                   });
                 }
+                break;
                 
               case protocol.RELAY_EXTENDED:
                 // execute callback
@@ -216,6 +240,7 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
                   msgMap[protocol.RELAY][protocol.RELAY_EXTEND][msgFields.stream_id].resolve();
                   clearTimeout(msgMap[protocol.RELAY][protocol.RELAY_EXTEND][msgFields.stream_id].timeout);
                 }
+                break;
 
               case protocol.RELAY_BEGIN_FAILED:
                 // close socket or server 404 etc.
@@ -223,21 +248,25 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
                   msgMap[protocol.RELAY][protocol.RELAY_BEGIN][msgFields.stream_id].reject();
                   clearTimeout(msgMap[protocol.RELAY][protocol.RELAY_BEGIN][msgFields.stream_id].timeout)
                 }
+                break;
 
               case protocol.RELAY_EXTEND_FAILED:
+                console.log("extend failed");
                 // restart our socket building
                 if (msgMap[protocol.RELAY][protocol.RELAY_EXTEND][msgFields.stream_id]) {
                   msgMap[protocol.RELAY][protocol.RELAY_EXTEND][msgFields.stream_id].reject();
                   clearTimeout(msgMap[protocol.RELAY][protocol.RELAY_EXTEND][msgFields.stream_id].timeout)
                 }
+                break;
             }
           } else {
             dstSock = mappings.getNodeToSocketMapping(destInfo.nid);
             torutils.sendWithoutPromise(protocol.sendRelay)(dstSock, destInfo.circid, msgFields.stream_id, msgFields.relay_command, msgFields.body);
           }
+          break;
       }
       // processed dataBuffer
-      dataBuffer = Buffer.from(dataBuffer.slice(512, dataBuffer.length));
+      dataBuffer = Buffer(dataBuffer.slice(512, dataBuffer.length));
     }
   });
   socket.on('close', function() {

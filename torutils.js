@@ -58,6 +58,7 @@ exports.sendWithPromise = function(sendFunction, successCallback, failCallback) 
   p.catch(function() {
     failCallback();
   });
+  console.log("created promise");
   return ret;
 }
 
@@ -79,14 +80,21 @@ exports.openTorConnection = function(host, port, nodeID, receiverID, successCall
 
 exports.createTorCircuit = function(nodeID, circID, successCallback, failCallback) {
   console.log("sending create");
-  exports.sendWithPromise(protocol.sendCreate, successCallback, failCallback)(socket, circID);
+  var socket = mappings.getNodeToSocketMapping(nodeID);
+  var temp = exports.sendWithPromise(protocol.sendCreate, successCallback, failCallback);
+  console.log("actually try to send");
+  temp(socket, circID);
   console.log("sent create");
+  console.log(socket.msgMap);
 }
 
 exports.extendTorConnection = function(host, port, receiverID, circID, successCallback, failCallback) {
+  console.log("in extend");
   var bodyBuf = packExtendBody(host, port, receiverID);
   var socket = mappings.getNodeToSocketMapping(receiverID);
+  console.log("packed");
   exports.sendWithPromise(protocol.sendRelay, successCallback, failCallback)(socket, circID, 0, protocol.RELAY_EXTEND, bodyBuf);
+  console.log("sent with promise");
 }
 
 exports.createFirstHop = function(host, port, nodeID, receiverID, circID, successCallback, failCallback) {

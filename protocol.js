@@ -63,9 +63,14 @@ function packCreate(circuit_id) {
 }
 
 exports.sendCreate = function(res, rej, socket, circuit_id) {
+    console.log("in send create");
     cell = packCreate(circuit_id);
+    console.log("packed with ID" + circuit_id);
+    socket.msgMap[CREATE][circuit_id] = {resolve: res, reject: rej, timeout: setTimeout(function(){console.log("timeout");rej();}, TIMEOUT)};
+    console.log(socket.msgMap);
+    console.log("added msg Map for create");
     socket.write(cell);
-    socket.msgMap[CREATE][circuit_id] = {resolve: res, reject: rej, timeout: setTimeout(function(){rej();}, TIMEOUT)};
+    console.log("sent message");
 }
 
 function packCreated(circuit_id) {
@@ -99,9 +104,9 @@ function packOpen(sender_id, receiver_id) {
 
 exports.sendOpen = function(res, rej, socket, sender_id, receiver_id) {
     cell = packOpen(sender_id, receiver_id);
-    console.log(socket.msgMap);
+    //console.log(socket.msgMap);
     socket.msgMap[OPEN] = {resolve: res, reject: rej, timeout: setTimeout(function(){console.log("timeout");rej();}, TIMEOUT)};
-    console.log(socket.msgMap);
+    //console.log(socket.msgMap);
     console.log("ADDED TO MAP");
     socket.write(cell);
 }
@@ -166,13 +171,13 @@ exports.sendCreateFailed = function(socket, circuit_id) {
 
 // Body parameter should be a buffer.
 function packRelay(circuit_id, stream_id, relay_command, body) {
+    body = Buffer(body);
+    var body_length;
     if (body == null) {body_length = 0;
     } else { body_length = body.length; }
     message_buffer = new Buffer(512);
     message_buffer.fill(0);
-
     message_buffer = packMainFields(circuit_id, RELAY, message_buffer);
-
     message_buffer.writeUInt16BE(stream_id, 3);
     message_buffer.writeUInt16BE(0, 5); // Empty here. Don't know why.
     message_buffer.writeUInt32BE(0, 7); // Digest would go here.
@@ -180,18 +185,29 @@ function packRelay(circuit_id, stream_id, relay_command, body) {
     message_buffer.writeUInt8(relay_command, 13);
     // Copy body over to message buffer
     if (body != null) {
-      body.copy(message_buffer, 14, 0, body_length);
+      temp = body.copy(message_buffer, 14, 0, body.length);
     }
-
     return message_buffer;
 }
 
 exports.sendRelay = function(res, rej, socket, circuit_id, stream_id, relay_command, body) {
+  console.log("in relay");
   cell = packRelay(circuit_id, stream_id, relay_command, body);
-  socket.write(cell);
+  console.log("packed relay");
   if (rej || res) {
-    socket.msgMap[RELAY][relay_command][stream_id] = {resolve: res, reject: rej, timeout:setTimeout(function(){rej();}, TIMEOUT)};
+    console.log("adding mappings");
+    var data = {resolve: res, reject: rej};
+    console.log("added resrej");
+    data["timeout"] = setTimeout(function(){console.log("TIMEOUT");rej();}, TIMEOUT);
+    console.log("added timeout to data");
+    console.log(socket.msgMap);
+    console.log(socket.msgMap[RELAY]);
+    console.log(relay_command);
+    socket.msgMap[RELAY][relay_command][stream_id] = data;//{resolve: res, reject: rej, timeout:setTimeout(function(){rej();}, TIMEOUT)};
   }
+  console.log("added mappings");
+ socket.write(cell);
+
 }
 
 exports.unpackRelay = function(message_buffer) {
@@ -209,10 +225,10 @@ exports.parseNodeAddr = function(message_buffer) {
   ret = {};
   // TODO: determine encoding
   var addr = message_buffer.toString(undefined, 0, message_buffer.length-5);
-  ret["agent_id"] = messageBuffer.readUInt32BE(message_buffer.length-4);
+  ret["agent_id"] = message_buffer.readUInt32BE(message_buffer.length-4);
   var addrSplit = addr.split(":");
   ret["ip"] = addrSplit[0];
-  ret["port"] = addrSplit[1];
+  ret["port"] = addrSplit[1].split('\0')[0];
   return ret;
 }
 
