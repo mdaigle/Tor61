@@ -108,7 +108,7 @@ function buildCircuit(onCircuitCompletion) {
       return;
     }
     resultList = response["entries"];
-    
+
     if (resultList.length <= 0) {
       mappings.BASE_CIRC_ID = 0;
       onCircuitCompletion();
@@ -125,7 +125,7 @@ function buildCircuit(onCircuitCompletion) {
         secondNode = resultList[Math.random(0, resultList.length)];
         secondNode["host"] = firstNode.service_addr.address;
         secondNode["port"] = firstNode.service_addr.port;
-      
+
         // TODO: double check function portrait
         torutils.extendTorConnection(secondNode.host, secondNode.port, secondNode.data, generateCircID(true), function() {
           thirdNode = resultList[Math.random(0, resultList.length)];
