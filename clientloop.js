@@ -142,7 +142,7 @@ exports.startClientLoop = function(nid, proxyPort) {
                                 clientSocket.write(msg);
 
                                 console.log("HTTP CONNECT");
-                                } else { clientSocket.write(modifiedHeader); }
+                            } else { first_hop_socket.write(modifiedHeader); }
                             });
                             first_hop_socket.on("data", (data) => {
                                console.log("data!");
