@@ -135,7 +135,14 @@ exports.startClientLoop = function(nid, proxyPort) {
                         }
                         if (mappings.BASE_CIRC_ID == 0) {
                             first_hop_socket = net.createConnection({host:hostName, port:hostPort}, function() {
-                                first_hop_socket.write(modifiedHeader);
+                                console.log("connected to server");
+                                // first_hop_socket.write(modifiedHeader);
+                                if (requestType == "CONNECT") {
+                                var msg = "HTTP/1.1 200 OK\r\n\r\n";
+                                clientSocket.write(msg);
+
+                                console.log("HTTP CONNECT");
+                                } else { clientSocket.write(modifiedHeader); }
                             });
                             first_hop_socket.on("data", (data) => {
                                console.log("data!");
@@ -152,6 +159,7 @@ exports.startClientLoop = function(nid, proxyPort) {
 
                         first_hop_socket.on("error", () => {
                             //TODO: error handling
+                            console.log("first hop sock err");
                             clientSocket.end();
                         })
                     });
@@ -212,6 +220,7 @@ exports.startClientLoop = function(nid, proxyPort) {
                     }
                     torutils.sendWithoutPromise(protocol.sendRelay)(first_hop_socket, circuit_id, stream_id, protocol.RELAY_DATA, data);
                 } else {
+                    console.log("client data!");
                     first_hop_socket.write(data);
                 }
             }
