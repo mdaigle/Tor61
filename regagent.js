@@ -395,7 +395,6 @@ socket_out.on('message', (buf, rinfo) => {
     }
 
     var header = unpackMainFields(buf);
-    console.log(header);
     if (header != null && header.magic == protocol.MAGIC){
     if (command_ok(header.command) && sequence_num_ok(header.seq_num)){
       // valid packet

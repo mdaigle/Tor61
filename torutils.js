@@ -1,4 +1,5 @@
 const crypto = require('crypto');
+require('./routerloop');
 
 exports.generateNodeID = function(ip, port) {
     //TODO: legit hash at some point?
@@ -47,18 +48,18 @@ exports.sendWithoutPromise = function(sendFunction) {
 
 exports.openTorConnection = function(host, port, nodeID, receiverID, successCallback, failCallback) {
   newSock = net.createConnection({host: host, port:port});
-  socketSetup(newSock, nodeID, true);
-  sendWithPromise(protocol.sendOpen, successCallback, failCallback)(newSock, nodeID, receiverID);
+  routerloop.socketSetup(newSock, nodeID, true);
+  exports.sendWithPromise(protocol.sendOpen, successCallback, failCallback)(newSock, nodeID, receiverID);
 }
 
 exports.createTorCircuit = function(nodeID, circID, successCallback, failCallback) {
-  sendWithPromise(protocol.sendCreate, successCallback, failCallback)(socket, circID);
+  exports.sendWithPromise(protocol.sendCreate, successCallback, failCallback)(socket, circID);
 }
 
 exports.extendTorConnection = function(host, port, receiverID, circID, successCallback, failCallback) {
   var bodyBuf = packExtendBody(host, port, receiverID);
   var socket = mappings.getNodeToSocketMapping(receiverID);
-  sendWithPromise(protocol.sendRelay, successCallback, failCallback)(socket, circID, 0, protocol.RELAY_EXTEND, bodyBuf);
+  exports.sendWithPromise(protocol.sendRelay, successCallback, failCallback)(socket, circID, 0, protocol.RELAY_EXTEND, bodyBuf);
 }
 
 exports.createFirstHop = function(host, port, nodeID, receiverID, successCallback, failCallback) {
@@ -66,7 +67,7 @@ exports.createFirstHop = function(host, port, nodeID, receiverID, successCallbac
     circID = generateCircID(true);
     createTorCircuit(receiverID, circID, successCallback, failCallback);
   }
-  openTorConnection(host, port, nodeID, circID, openSuccessCallback, failCallback);
+  exports.openTorConnection(host, port, nodeID, circID, openSuccessCallback, failCallback);
 }
 
 Object.freeze(exports);
