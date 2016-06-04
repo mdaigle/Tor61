@@ -1,5 +1,7 @@
 /* Notes:
  * All send callbacks and timeouts need to clear socket msgMap entries
+ * TODO: we need to use rl so we can quit and unregister
+ * TODO: need to change service_name to be correct
  */
 
 
@@ -22,6 +24,7 @@ var regagent = require('./regagent');
 // Register with reg service
 //  Need way to interface with reg service
 var nodeID = torutils.generateNodeID();
+console.log("nodeID:" + nodeID);
 var args = process.argv.slice(2);
 var torNodePort =  1461;//args[0]; // CHANGE
 
@@ -176,8 +179,31 @@ function buildCircuit(onCircuitCompletion) {
     }
   });
 }
+
+var readline = require('readline');
+var rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout,
+  terminal: false
+});
+
+rl.pause();
+rl.on('line', (line) => {
+  if (line == "q") {
+    regagent.unregister(torNodePort, function() {
+      process.exit(0);
+    });
+  }
+});
+
+rl.on('close', () => {
+  // teardown fn
+});
+
 regagent.setupRegAgent(function(){
-    buildCircuit(function(){regagent.register(torNodePort, nodeID, "daigle-tsen", function(){console.log("registered");})});
+    buildCircuit(function(){regagent.register(torNodePort, nodeID, "daigle-tsen", function(){console.log("registered");
+rl.resume();
+})});
 });
 
 /*
