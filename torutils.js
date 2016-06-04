@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 require('./routerloop');
+var net = require('net');
 
 exports.parseIP(ip_as_int) {
     buf = new Buffer(4);
@@ -75,9 +76,9 @@ exports.extendTorConnection = function(host, port, receiverID, circID, successCa
 exports.createFirstHop = function(host, port, nodeID, receiverID, successCallback, failCallback) {
   openSuccessCallback = function() {
     circID = generateCircID(true);
-    createTorCircuit(receiverID, circID, successCallback, failCallback);
+    exports.createTorCircuit(receiverID, circID, successCallback, failCallback);
   }
-  exports.openTorConnection(host, port, nodeID, circID, openSuccessCallback, failCallback);
+  exports.openTorConnection(host, port, nodeID, receiverID, openSuccessCallback, failCallback);
 }
 
 Object.freeze(exports);
