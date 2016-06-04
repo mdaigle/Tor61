@@ -45,13 +45,13 @@ exports.unpackMainFields = function(message_buffer) {
 
 exports.unpack = function(command, message_buffer) {
   switch(command) {
-    case protocol.OPEN:
+    case OPEN:
       return exports.unpackOpen(message_buffer);
-    case protocol.OPENED:
+    case OPENED:
       return exports.unpackOpened(message_buffer);
-    case protocol.OPEN_FAILED:
+    case OPEN_FAILED:
       return exports.unpackOpenFailed(message_buffer);
-    case protocol.RELAY:
+    case RELAY:
       return exports.unpackRelay(message_buffer);
     default:
       return {};

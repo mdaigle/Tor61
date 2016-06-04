@@ -59,7 +59,7 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
           }
         }
         socket.end();
-        if (protocol.OPEN in msgMap && "reject" in msgMap[protocol.OEPN]) {
+        if (protocol.OPEN in msgMap && "reject" in msgMap[protocol.OPEN]) {
           msgMap[protocol.OPEN].reject();
         }
         if (protocol.CREATE in msgMap) {
