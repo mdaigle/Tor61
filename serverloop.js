@@ -5,23 +5,17 @@
 
 // when this socket or the other socket is closed teardown the stream
 require('buffer');
-require('dns');
+var dns = require('dns');
+var net = require('net');
 var torutils = require('./torutils');
 
 exports.initiateConnection = function(msgFields, otherNodeID, circID, resolve, reject) {
-  console.log("initating connection");
   var addrStr = msgFields.body.toString(undefined, 0, msgFields.body.length-1);
-  console.log(addrStr);
-  console.log("a");
   var streamID = msgFields.stream_id;
-  console.log("b");
   var addrSplit = addrStr.split(":"); // TODO: this may need work
-  console.log("c");
-  console.log(addrSplit.length);
-  var hostname = addrSplit[0];
-  var port = addrSplit[1];
-  var serverSocket = net.Socket();
-  console.log("d");
+  var hostName = addrSplit[0];
+  var hostPort = addrSplit[1];
+  var serverSocket = new net.Socket();
 
   function connectToServer(hostname, port) {
     // Assign on msg based upon connection type Connect vs Get
@@ -65,7 +59,7 @@ exports.initiateConnection = function(msgFields, otherNodeID, circID, resolve, r
     console.log("connecting");
     serverSocket.connect(hostPort, hostName);
   }
-  dns.lookup(hostname, (err, address, family) => {
+  dns.lookup(hostName, (err, address, family) => {
     if (err) {
         console.log('lookup failure');
         reject();

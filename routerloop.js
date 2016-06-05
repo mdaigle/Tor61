@@ -203,7 +203,7 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
             switch (msgFields.relay_command) {
               case protocol.RELAY_BEGIN:
                 (new Promise(function(resolve, reject){
-                  serverloop.initiateConnection(msgFields, otherNodeID, circID);
+                  serverloop.initiateConnection(msgFields, otherNodeID, circID, resolve, reject);
                 })).then(function(){
                   torutils.sendWithoutPromise(protocol.sendRelay)(socket, circID, msgFields.stream_id, protocol.RELAY_CONNECTED, null);
                 }).catch(function() {
@@ -230,7 +230,7 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
                 // TODO: can't just publish to streamID because not globally
                 // unique
                 if (msgMap[protocol.RELAY][protocol.RELAY_BEGIN][msgFields.stream_id]) {
-                  msgMap[protocl.RELAY][protocol.RELAY_BEGIN][msgFields.stream_id].resolve();
+                  msgMap[protocol.RELAY][protocol.RELAY_BEGIN][msgFields.stream_id].resolve();
                   clearTimeout(msgMap[protocol.RELAY][protocol.RELAY_BEGIN][msgFields.stream_id].timeout);
                 }
                 break;
