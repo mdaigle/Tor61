@@ -1,17 +1,3 @@
-// TODO: Malcolm, do all send functions using
-// routerloop.sendWithPromise/sendWithoutPromise(protocol.sendRelay)
-
-// Event loop for client socket
-//  similar to proxy event loop
-//  once ready, map streamID->socket_out
-
-//TODO: Put this bit at the beginning of tor61 file.
-/*
-const EventEmitter = require("events").EventEmitter;
-global.emitter = new EventEmitter();
-clientloop = require("./clientloop.js");
-*/
-
 /*When a browser connects, the header of the HTTP request is processed to identify the ip:port of the web server.
 
     A stream number, S, that is not in use on the source router's circuit is chosen.
@@ -31,8 +17,6 @@ var stream_id_counter = 1;
 function getNewStreamID() {
     return stream_id_counter++;
 }
-
-//TODO: move below argument processing to main file. Set client facing port as a global.
 
 var server;
 
@@ -136,13 +120,16 @@ exports.startClientLoop = function(nid, proxyPort) {
                         if (mappings.BASE_CIRC_ID == 0) {
                             first_hop_socket = net.createConnection({host:hostName, port:hostPort}, function() {
                                 console.log("connected to server");
+                                clientSocket.resume();
                                 // first_hop_socket.write(modifiedHeader);
                                 if (requestType == "CONNECT") {
-                                var msg = "HTTP/1.1 200 OK\r\n\r\n";
-                                clientSocket.write(msg);
+                                    var msg = "HTTP/1.1 200 OK\r\n\r\n";
+                                    clientSocket.write(msg);
 
                                 console.log("HTTP CONNECT");
-                            } else { first_hop_socket.write(modifiedHeader); }
+                                } else {
+                                    first_hop_socket.write(modifiedHeader);
+                                }
                             });
                             first_hop_socket.on("data", (data) => {
                                console.log("data!");
@@ -171,31 +158,24 @@ exports.startClientLoop = function(nid, proxyPort) {
                         var body = new Buffer(hostname + ":" + port + "\0");
                         // first_hop_socket.write(relay_begin_cell);
 
-                        torutils.sendWithPromise(protocol.sendRelay, function() {
-
-                                // Map from identifiers to this socket so that
-                                // the main loop can route data cells coming
-                                // from the network.
+                        torutils.sendWithPromise(protocol.sendRelay,
+                            function() { //success callback
                                 mappings.addStreamToSocketMapping(nid, _circuit_id, _stream_id, clientSocket);
-                                // This is the response for the stream we began
                                 //TODO: break up header before sending (if necessary)
                                 if (requestType == "CONNECT") {
-                                    //TODO: send 200 to client here?
                                     var msg = "HTTP/1.1 200 OK\r\n\r\n";
                                     clientSocket.write(msg);
                                     first_hop_socket.on("error", function() {
-                                        // send 502 bad gateway
                                         var msg = "HTTP/1.1 502 Bad Gateway\r\n\r\n";
                                         clientSocket.write(msg, function() {
                                             clientSocket.end();
                                         });
                                     });
                                 } else {
-                                    // TODO: this should be a relay function
                                     torutils.sendWithoutPromise(protocol.sendRelay)(first_hop_socket, circuit_id, stream_id, protocol.RELAY_DATA, data);
                                 }
-                                    // Resume listening for data on client socket so
-                                    // that we can forward it along the new stream.
+                                // Resume listening for data on client socket so
+                                // that we can forward it along the new stream.
                                 clientSocket.resume();
                             },
                             function () { //fail callback
@@ -207,9 +187,6 @@ exports.startClientLoop = function(nid, proxyPort) {
                       }
                 }
             } else {
-                // Forward data along circuit
-                // 498 is 512 byte cell size minus 14 bytes for cell header.
-
                 if (mappings.BASE_CIRC_ID != 0) {
                     while (data.length > protocol.MAX_BODY_SIZE) {
                         smaller_data = Buffer.from(data, protocol.MAX_BODY_SIZE);
