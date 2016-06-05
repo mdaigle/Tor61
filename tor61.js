@@ -114,22 +114,32 @@ function buildCircuit(onCircuitCompletion) {
     }
     tempList = response["entries"];
     var resultList = [];
-    // console.log(tempList);
     function testNode(i, finalCallback) {
-    //   console.log(i);
-      if (i == tempList.length) {finalCallback(); return;}
-      node = tempList[i];
-      node["host"] = torutils.parseIP(node.service_addr.address);
-      node["port"] = node.service_addr.port;
-      var tempSock = net.createConnection({host: node.host, port:node.port});
-      tempSock.on('error', (err) => {console.log("err");tempSock.end(); testNode(i+1, finalCallback);});
-      tempSock.on('connect', () => {resultList.push(node);testNode(i+1, finalCallback); tempSock.end();});
+        if (i == tempList.length) {
+            finalCallback(); return;
+        }
+        node = tempList[i];
+        node["host"] = torutils.parseIP(node.service_addr.address);
+        node["port"] = node.service_addr.port;
+        var tempSock = net.createConnection({host: node.host, port:node.port});
+        tempSock.on('error', (err) => {
+            console.log("err");
+            tempSock.end();
+            testNode(i+1, finalCallback);
+        });
+        tempSock.on('connect', () => {
+            resultList.push(node);
+            testNode(i+1, finalCallback);
+            tempSock.end();
+        });
     }
     testNode(0, function(){
-
-    // console.log(resultList);
-    // TODO: add ourselves to the list
-    // console.log(resultList);
+    resultList.push({service_data: nodeID, service_addr: {address: regagent.local_address, port: torNodePort}});
+    console.log("\nAvailable nodes are:");
+    for (i = 0; i < resultList.length; i++) {
+        console.log("ID:" + resultList[i].service_data);
+    }
+    console.log();
 
     if (resultList.length <= 0) {
       mappings.BASE_CIRC_ID = 0;

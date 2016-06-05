@@ -18,11 +18,11 @@ var socket_out = dgram.createSocket('udp4');
 // console.log(socket_out);
 var socket_in = dgram.createSocket('udp4');
 var reg_service_address;
-var local_address;
+exports.local_address;
 
 
 exports.setupRegAgent = function(callback) {
-    local_address = getThisHostIP();
+    exports.local_address = getThisHostIP();
     dns.lookup(reg_service_hostname, (err, address, family) => {
         if (err) {
             console.log("error resolving service hostname");
@@ -34,7 +34,7 @@ exports.setupRegAgent = function(callback) {
 
         //TODO: remove?
         console.log('regServerIP:', address);
-        console.log('thisHostIP:', local_address);
+        console.log('thisHostIP:', exports.local_address);
 
         bind_sockets(callback);
     });
@@ -204,7 +204,7 @@ function send_register(port, service_data, service_name, explicit_call){
                             "timeout": null,
                             "explicit_call": explicit_call};
 
-    msg = protocol.packRegister(get_sequence_num(), local_address, port, service_data, service_name);
+    msg = protocol.packRegister(get_sequence_num(), exports.local_address, port, service_data, service_name);
     send(msg, socket_out, function(err){
         last_msg_sent = protocol.REGISTER;
     });
