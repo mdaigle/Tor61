@@ -116,7 +116,7 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
             if (!createdByUs) {
                 socketValidated = true;
             }
-            otherNodeID = msgFields.opened_id;
+            otherNodeID = msgFields.opener_id;
             break;
 
         case protocol.OPENED:
@@ -220,8 +220,9 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
 
               case protocol.RELAY_END:
                 // remove mappings, close socket to server
-                destSock = mappings.getStreamToSocketMapping(otherNodeID, circID, msgFields.stream_id);
-                destSock.end();
+                console.log(otherNodeID + ", " + circID + ", " + msgFields.stream_id);
+                // destSock = mappings.getStreamToSocketMapping(otherNodeID, circID, msgFields.stream_id);
+                // destSock.end();
                 mappings.removeStreamToSocketMapping(otherNodeID, circID, msgFields.stream_id);
                 break;
 
@@ -245,8 +246,8 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
                 // console.log("received extend");
                 if (newID == nodeID) {
                   console.log("Extending to self");
-                  mappings.addCircuitMapping(otherNodeID, circID, null, null);
-                  torutils.sendWithoutPromise(protocol.sendRelay)(socket, circID, 0, protocol.RELAY_EXTENDED, null);
+                //   mappings.addCircuitMapping(otherNodeID, circID, null, null);
+                //   torutils.sendWithoutPromise(protocol.sendRelay)(socket, circID, 0, protocol.RELAY_EXTENDED, null);
                 } else {
                   var newCircID = torutils.generateCircID((mappings.getNodeToSocketMapping(newID) == null));
                   torutils.createFirstHop(newHost, newPort, nodeID, newID, function() {
