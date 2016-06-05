@@ -155,7 +155,7 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
         case protocol.CREATE:
             console.log("<<< Received CREATE " + circID);
           // add mapping and send created
-        //   mappings.addCircuitMapping(otherNodeID, circID, null, null);
+          mappings.addCircuitMapping(otherNodeID, circID, null, null);
           protocol.sendCreated(socket, circID);
           break;
 
