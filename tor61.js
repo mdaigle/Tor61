@@ -122,13 +122,22 @@ function buildCircuit(onCircuitCompletion) {
         node = tempList[i];
         node["host"] = torutils.parseIP(node.service_addr.address);
         node["port"] = node.service_addr.port;
+
         var tempSock = net.createConnection({host: node.host, port:node.port});
+
+        timer = setTimeout(function(){
+            tempSock.end();
+            testNode(i+1, finalCallback);
+        }, 4000);
+
         tempSock.on('error', (err) => {
+            clearTimeout(timer);
             console.log("err");
             tempSock.end();
             testNode(i+1, finalCallback);
         });
         tempSock.on('connect', () => {
+            clearTimeout(timer);
             resultList.push(node);
             testNode(i+1, finalCallback);
             tempSock.end();
