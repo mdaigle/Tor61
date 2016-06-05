@@ -6,6 +6,8 @@
 
     The last router on the circuit receives that cell and attempts to establish a TCP connection with the web server. If successful, it sends a Relay Connected cell back to the source router.*/
 
+
+//TODO: close clientSocket if first_hop_socket closes or we get an end
 var net = require('net');
 var dns = require('dns');
 var date = new Date();
@@ -132,7 +134,7 @@ exports.startClientLoop = function(nid, proxyPort) {
                                 }
                             });
                             first_hop_socket.on("data", (data) => {
-                               console.log("data!");
+                            //    console.log("data!");
                                clientSocket.write(data);
                             });
 
@@ -140,13 +142,18 @@ exports.startClientLoop = function(nid, proxyPort) {
                         } else {
                             circuit_mapping = mappings.getCircuitMapping(nid, mappings.BASE_CIRC_ID);
                             first_hop_socket = mappings.getNodeToSocketMapping(circuit_mapping.nid);
+                            console.log(first_hop_socket);
                             beginRelay(address, hostPort);
                         }
 
 
-                        first_hop_socket.on("error", () => {
+                        first_hop_socket.on("error", (err) => {
                             //TODO: error handling
                             console.log("first hop sock err");
+                            console.log(err);
+                            clientSocket.end();
+                        });
+                        first_hop_socket.on("close", () => {
                             clientSocket.end();
                         })
                     });
@@ -195,7 +202,7 @@ exports.startClientLoop = function(nid, proxyPort) {
                     }
                     torutils.sendWithoutPromise(protocol.sendRelay)(first_hop_socket, circuit_id, stream_id, protocol.RELAY_DATA, data);
                 } else {
-                    console.log("client data!");
+                    // console.log("client data!");
                     first_hop_socket.write(data);
                 }
             }
