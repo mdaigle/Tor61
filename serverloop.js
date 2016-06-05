@@ -44,8 +44,8 @@ exports.initiateConnection = function(msgFields, otherNodeID, circID, resolve, r
     serverSocket.on("data", function(data) {
       // forward data backwards
       console.log("received data from server");
+      //TODO: if we're the only node, don't relay, just send data
       var destSock = mappings.getNodeToSocketMapping(otherNodeID);
-      // TODO: add protocol.maxRelayBodyLength
       if (data.length <= protocol.MAX_BODY_SIZE) {
         protocol.sendRelay(destSock, circID, streamID, protocol.RELAY_DATA, data);
       } else {
