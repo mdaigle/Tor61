@@ -49,7 +49,7 @@ exports.startClientLoop = function(nid, proxyPort) {
 
         // do we need to pass as an argument
         clientSocket.on('data', function (data, serverSock) {
-        // console.log(data);
+            console.log("Got client data.");
             if (!haveSeenEndOfHeader) {
                 var dataString = data.toString('ascii');
                 header += dataString;
