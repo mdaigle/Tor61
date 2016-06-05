@@ -28,9 +28,6 @@ exports.addCircuitMapping = function(srcID, srcCircID, destID, destCircID) {
     if (exports.getCircuitMapping(srcID, srcCircID) != null) {
         throw "Duplicate mapping for source circuit id.";
     }
-    if (exports.getCircuitMapping(destID, destCircID) != null) {
-        throw "Duplicate mapping for destination circuit id.";
-    }
 
     if (!(srcID in circuit_map)) {
         circuit_map[srcID] = {};

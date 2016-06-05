@@ -136,7 +136,8 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
             clearTimeout(msgMap[protocol.OPEN].timeout);
             delete msgMap[protocol.OPEN];
           }
-          otherNodeID = msgFields.opened_id;
+          otherNodeID = msgFields.opener_id;
+          console.log("Other node id: " + otherNodeID);
           break;
 
         case protocol.OPEN_FAILED:
