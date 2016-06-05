@@ -194,7 +194,7 @@ exports.startClientLoop = function(nid, proxyPort) {
                                 clientSocket.write(msg, function() {
                                     clientSocket.end();
                                 });
-                            })(first_hop_socket, circuit_id, stream_id, protocol.RELAY_BEGIN, null);
+                            })(first_hop_socket, circuit_id, stream_id, protocol.RELAY_BEGIN, body);
                       }
                 }
             } else {
