@@ -37,14 +37,6 @@ exports.addCircuitMapping = function(srcID, srcCircID, destID, destCircID) {
     }
 
     circuit_map[srcID][srcCircID] = {nid:destID, circid:destCircID};
-    if (destID != null && destCircID != null) {
-
-        if (!(destID in circuit_map)) {
-            circuit_map[destID] = {};
-        }
-
-        circuit_map[destID][destCircID] = {nid:srcID, circid:srcCircID};
-    }
 }
 
 exports.removeCircuitMapping = function(nodeID, circID){

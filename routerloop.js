@@ -163,6 +163,7 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
           // mapping successful
         //   console.log("received created on " + circID);
           mappings.addCircuitMapping(otherNodeID, circID, null, null);
+          mappings.addCircuitMapping(nodeID, circID, otherNodeID, circID);
           if (protocol.CREATE in msgMap && msgMap[protocol.CREATE] != null) {
             // console.log(socket.UUID);
             // console.log(msgMap);
@@ -249,6 +250,7 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
                   var newCircID = torutils.generateCircID((mappings.getNodeToSocketMapping(newID) == null));
                   torutils.createFirstHop(newHost, newPort, nodeID, newID, function() {
                     mappings.addCircuitMapping(otherNodeID, circID, newID, newCircID);
+                    mappings.addCircuitMapping(newID, newCircID, otherNodeID, circID);
                     torutils.sendWithoutPromise(protocol.sendRelay)(socket, circID, 0, protocol.RELAY_EXTENDED, null);
                   }, function() {
                     torutils.sendWithoutPromise(protocol.sendRelay)(responseSock, circID, 0, protocol.RELAY_EXTEND_FAILED, null);
