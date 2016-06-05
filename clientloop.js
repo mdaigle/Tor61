@@ -174,7 +174,8 @@ exports.startClientLoop = function(nid, proxyPort) {
                                 console.log("Stream successfully created");
                                 // console.log(nid + ", " + circuit_id + ", " + stream_id);
                                 // console.log(clientSocket);
-                                mappings.addStreamToSocketMapping(nid, circuit_id, stream_id, clientSocket);
+                                var first_hop = mappings.getCircuitMapping(nid, circuit_id);
+                                mappings.addStreamToSocketMapping(first_hop.nid, first_hop.circid, stream_id, clientSocket);
                                 // console.log("Added stream to socket mapping");
                                 //TODO: break up header before sending (if necessary)
                                 if (requestType == "CONNECT") {
