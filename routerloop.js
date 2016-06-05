@@ -33,7 +33,7 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
   //console.log("BASE MAP");
   //console.log(socket.UUID);
   //console.log(msgMap);
-  
+
   // each entry should be {resolve: , reject:, timeout:}
   socket["msgMap"] = msgMap;
   Object.observe(socket.msgMap[protocol.CREATE], function(changes) {
@@ -58,21 +58,21 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
     while (dataBuffer.length >= 512) {
       // process message
       // slice out current msg
-      msg = dataBuffer.slice(0, 512);
+      var msg = dataBuffer.slice(0, 512);
       // check command, handle appropriately
-      unpacked = protocol.unpackMainFields(msg);
-      circID = unpacked.circuit_id;
-      command = unpacked.cell_type;
+      var unpacked = protocol.unpackMainFields(msg);
+      var circID = unpacked.circuit_id;
+      var command = unpacked.cell_type;
       console.log("received: " + command);
       if (command < 0 || command > 8) {
         console.log("bad message");
         return;
       }
-      msgFields = protocol.unpack(command, msg);
+      var msgFields = protocol.unpack(command, msg);
       // reassign teardown now that items are in scope
       teardown = function(){
         /*if (otherNodeID != null) {
-          mappings.removeNodeToSocketMapping(otherNodeID); 
+          mappings.removeNodeToSocketMapping(otherNodeID);
           if (circID != null && circID != 0) {
             mappings.removeCircuitMapping(otherNodeID);
           }
@@ -98,7 +98,7 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
           }
         }*/
       };
-      
+
       if (!socketValidated && (command != protocol.OPEN && command != protocol.OPENED && command != protocol.OPEN_FAILED)) {
         console.log("tearing down");
         teardown();
@@ -106,19 +106,21 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
       }
       switch(command) {
         case protocol.OPEN:
-          clearTimeout(openTimeout);
-          if (msgFields.opened_id != nodeID) {
-            protocol.sendOpenFailed(socket, msgFields.opener_id, msgFields.opened_id);
-          }
-          mappings.addNodeToSocketMapping(msgFields.opener_id, socket);
-          protocol.sendOpened(socket, msgFields.opener_id, msgFields.opened_id);
-          if (!createdByUs) {
-            socketValidated = true; 
-          }
-          otherNodeID = msgFields.opened_id;
-          break;
+            console.log("<<< Received OPEN");
+            clearTimeout(openTimeout);
+            if (msgFields.opened_id != nodeID) {
+                protocol.sendOpenFailed(socket, msgFields.opener_id, msgFields.opened_id);
+            }
+            mappings.addNodeToSocketMapping(msgFields.opener_id, socket);
+            protocol.sendOpened(socket, msgFields.opener_id, msgFields.opened_id);
+            if (!createdByUs) {
+                socketValidated = true;
+            }
+            otherNodeID = msgFields.opened_id;
+            break;
 
         case protocol.OPENED:
+            console.log("<<< Received OPENED");
           // circuit successfully added the first router
           // add nodeToSocketMapping
           // Or successfully added a new router
@@ -138,6 +140,7 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
           break;
 
         case protocol.OPEN_FAILED:
+            console.log("<<< Received OPEN_FAILED");
           // connecting to a node failed
           // either need to send an extend failed (?) or we failed to connect to
           // our first router
@@ -149,14 +152,16 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
           break;
 
         case protocol.CREATE:
+            console.log("<<< Received CREATE");
           // add mapping and send created
           mappings.addCircuitMapping(otherNodeID, circID, null, null);
           protocol.sendCreated(socket, circID);
           break;
 
         case protocol.CREATED:
+            console.log("<<< Received CREATED");
           // mapping successful
-          console.log("received created on " + circID);
+        //   console.log("received created on " + circID);
           mappings.addCircuitMapping(otherNodeID, circID, null, null);
           if (protocol.CREATE in msgMap && msgMap[protocol.CREATE] != null) {
             // console.log(socket.UUID);
@@ -168,6 +173,7 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
           break;
 
         case protocol.CREATE_FAILED:
+            console.log("<<< Received CREATE_FAILED");
           // we failed. Either send an extend failed OR we failed to connect to
           // the first router in our circuit and need to restart
           if (protocol.CREATE in msgMap && msgMap[protocol.CREATE] != null) {
@@ -178,6 +184,7 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
           break;
 
         case protocol.DESTROY:
+            console.log("<<< Received DESTROY");
           destInfo = mappings.getCircuitMapping(otherNodeID, circID);
           otherSock = mappings.getNodeToSocketMapping(destInfo.nid);
           protocol.sendDestroy(otherSock, destInfo.circid);
@@ -185,6 +192,7 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
           break;
 
         case protocol.RELAY:
+            console.log("<<< Received RELAY" + msgFields.relay_command);
           // check if end node
           destInfo = mappings.getCircuitMapping(otherNodeID, circID);
           // DONE: add basecase circID -> null for our own circuit
@@ -193,7 +201,7 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
             switch (msgFields.relay_command) {
               case protocol.RELAY_BEGIN:
                 (new Promise(function(resolve, reject){
-                  serverloop.initiateConnection(msgFields, otherNodeID, circID, resolve, reject);
+                  serverloop.initiateConnection(msgFields, otherNodeID, circID);
                 })).then(function(){
                   torutils.sendWithoutPromise(protocol.sendRelay)(socket, circID, msgFields.stream_id, protocol.RELAY_CONNECTED, null);
                 }).catch(function() {
@@ -247,7 +255,7 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
                   });
                 }
                 break;
-                
+
               case protocol.RELAY_EXTENDED:
                 // execute callback
                 if (msgMap[protocol.RELAY][protocol.RELAY_EXTEND][msgFields.stream_id]) {

@@ -49,7 +49,7 @@ exports.startClientLoop = function(nid, proxyPort) {
 
         // do we need to pass as an argument
         clientSocket.on('data', function (data, serverSock) {
-		console.log(data);
+        // console.log(data);
             if (!haveSeenEndOfHeader) {
                 var dataString = data.toString('ascii');
                 header += dataString;
@@ -122,14 +122,14 @@ exports.startClientLoop = function(nid, proxyPort) {
                         }
                         if (mappings.BASE_CIRC_ID == 0) {
                             first_hop_socket = net.createConnection({host:hostName, port:hostPort}, function() {
-                                console.log("connected to server");
+                                // console.log("connected to server");
                                 clientSocket.resume();
                                 // first_hop_socket.write(modifiedHeader);
                                 if (requestType == "CONNECT") {
                                     var msg = "HTTP/1.1 200 OK\r\n\r\n";
                                     clientSocket.write(msg);
 
-                                console.log("HTTP CONNECT");
+                                // console.log("HTTP CONNECT");
                                 } else {
                                     first_hop_socket.write(modifiedHeader);
                                 }
@@ -143,7 +143,7 @@ exports.startClientLoop = function(nid, proxyPort) {
                         } else {
                             circuit_mapping = mappings.getCircuitMapping(nid, mappings.BASE_CIRC_ID);
                             first_hop_socket = mappings.getNodeToSocketMapping(circuit_mapping.nid);
-                            console.log(first_hop_socket);
+                            // console.log(first_hop_socket);
                             beginRelay(address, hostPort);
                         }
 
