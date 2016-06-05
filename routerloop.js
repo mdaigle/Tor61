@@ -155,7 +155,7 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
         case protocol.CREATE:
             console.log("<<< Received CREATE " + circID);
           // add mapping and send created
-          mappings.addCircuitMapping(otherNodeID, circID, null, null);
+        //   mappings.addCircuitMapping(otherNodeID, circID, null, null);
           protocol.sendCreated(socket, circID);
           break;
 
@@ -163,8 +163,8 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
             console.log("<<< Received CREATED " + circID);
           // mapping successful
         //   console.log("received created on " + circID);
-          mappings.addCircuitMapping(otherNodeID, circID, null, null);
-          mappings.addCircuitMapping(nodeID, circID, otherNodeID, circID);
+        //   mappings.addCircuitMapping(otherNodeID, circID, nodeID, circID);
+        //   mappings.addCircuitMapping(nodeID, circID, otherNodeID, circID);
           if (protocol.CREATE in msgMap && msgMap[protocol.CREATE] != null) {
             // console.log(socket.UUID);
             // console.log(msgMap);

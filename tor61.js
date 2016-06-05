@@ -172,6 +172,10 @@ function buildCircuit(onCircuitCompletion) {
       torutils.createFirstHop(firstNode.host, firstNode.port, nodeID, firstNode.service_data, firstCircID, function() {
         console.log("first hop in circuit created to: " + firstNode.service_data);
         mappings.BASE_CIRC_ID = firstCircID;
+
+        mappings.addCircuitMapping(nodeID, firstCircID, firstNode.service_data, firstCircID);
+        mappings.addCircuitMapping(firstNode.service_data, firstCircID, null, null);
+
         do {
         //console.log("in loop");
         secondNode = resultList[Math.floor(Math.random()*resultList.length)];
