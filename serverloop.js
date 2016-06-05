@@ -7,6 +7,7 @@
 require('buffer');
 var dns = require('dns');
 var net = require('net');
+var mappings = require('./mappings');
 var torutils = require('./torutils');
 
 exports.initiateConnection = function(msgFields, otherNodeID, circID, resolve, reject) {
