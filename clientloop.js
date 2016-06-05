@@ -141,8 +141,11 @@ exports.startClientLoop = function(nid, proxyPort) {
 
 
                         } else {
+                            console.log("BASE CIRC ID is " + mappings.BASE_CIRC_ID);
                             circuit_mapping = mappings.getCircuitMapping(nid, mappings.BASE_CIRC_ID);
+                            console.log("Maps to " + circuit_mapping.nid);
                             first_hop_socket = mappings.getNodeToSocketMapping(circuit_mapping.nid);
+                            console.log("Which maps to socket " + first_hop_socket);
                             // console.log(first_hop_socket);
                             beginRelay(address, hostPort);
                         }

@@ -108,6 +108,7 @@ torNode.listen(torNodePort); // can add callback
 // TODO: fix parsing of host port
 function buildCircuit(onCircuitCompletion) {
   regagent.fetch("daigle-tsen", function(response) {
+      console.log("Got a fetch response");
     if (!("entries" in response)) {
       console.log("reg fail");
       return;

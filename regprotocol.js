@@ -102,6 +102,8 @@ exports.unpackFetchResponse = function(message_buffer) {
         return null;
     }
 
+    // console.log("Unpacking fetch response");
+
     var msg = unpackMainFields(message_buffer);
     msg.num_entries = message_buffer.readUInt8(4);
     msg.entries = [];
@@ -116,9 +118,10 @@ exports.unpackFetchResponse = function(message_buffer) {
             },
             service_data: message_buffer.readUInt32BE(entry_offset + 6)
         };
-        console.log("service_data: " + entry.service_data);
+        // console.log("service_data: " + entry.service_data);
 
         msg.entries.push(entry);
+        // console.log("pushed entry");
     }
 
     return msg;

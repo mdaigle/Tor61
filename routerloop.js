@@ -63,7 +63,7 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
       var unpacked = protocol.unpackMainFields(msg);
       var circID = unpacked.circuit_id;
       var command = unpacked.cell_type;
-      console.log("received: " + command);
+    //   console.log("received: " + command);
       if (command < 0 || command > 8) {
         console.log("bad message");
         return;
@@ -106,7 +106,7 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
       }
       switch(command) {
         case protocol.OPEN:
-            console.log("<<< Received OPEN");
+            console.log("<<< Received OPEN from " + msgFields.opener_id);
             clearTimeout(openTimeout);
             if (msgFields.opened_id != nodeID) {
                 protocol.sendOpenFailed(socket, msgFields.opener_id, msgFields.opened_id);
@@ -120,7 +120,7 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
             break;
 
         case protocol.OPENED:
-            console.log("<<< Received OPENED");
+            console.log("<<< Received OPENED from " + msgFields.opener_id);
           // circuit successfully added the first router
           // add nodeToSocketMapping
           // Or successfully added a new router
@@ -140,7 +140,7 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
           break;
 
         case protocol.OPEN_FAILED:
-            console.log("<<< Received OPEN_FAILED");
+            console.log("<<< Received OPEN_FAILED from " + msgFields.opener_id);
           // connecting to a node failed
           // either need to send an extend failed (?) or we failed to connect to
           // our first router
@@ -152,14 +152,14 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
           break;
 
         case protocol.CREATE:
-            console.log("<<< Received CREATE");
+            console.log("<<< Received CREATE " + circID);
           // add mapping and send created
           mappings.addCircuitMapping(otherNodeID, circID, null, null);
           protocol.sendCreated(socket, circID);
           break;
 
         case protocol.CREATED:
-            console.log("<<< Received CREATED");
+            console.log("<<< Received CREATED " + circID);
           // mapping successful
         //   console.log("received created on " + circID);
           mappings.addCircuitMapping(otherNodeID, circID, null, null);
@@ -173,7 +173,7 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
           break;
 
         case protocol.CREATE_FAILED:
-            console.log("<<< Received CREATE_FAILED");
+            console.log("<<< Received CREATE_FAILED " + circID);
           // we failed. Either send an extend failed OR we failed to connect to
           // the first router in our circuit and need to restart
           if (protocol.CREATE in msgMap && msgMap[protocol.CREATE] != null) {
@@ -184,7 +184,7 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
           break;
 
         case protocol.DESTROY:
-            console.log("<<< Received DESTROY");
+            console.log("<<< Received DESTROY " + circID);
           destInfo = mappings.getCircuitMapping(otherNodeID, circID);
           otherSock = mappings.getNodeToSocketMapping(destInfo.nid);
           protocol.sendDestroy(otherSock, destInfo.circid);
@@ -192,7 +192,7 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
           break;
 
         case protocol.RELAY:
-            console.log("<<< Received RELAY" + msgFields.relay_command);
+            console.log("<<< Received RELAY " + msgFields.relay_command + " on " + circID);
           // check if end node
           destInfo = mappings.getCircuitMapping(otherNodeID, circID);
           // DONE: add basecase circID -> null for our own circuit
