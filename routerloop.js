@@ -236,13 +236,13 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
                 // TODO: parse host and port
                 // TODO: make parseString in torutils
                 var nodeFields = protocol.parseNodeAddr(msgFields.body);
-                console.log(nodeFields);
+                // console.log(nodeFields);
                 var newHost = nodeFields.ip;
                 var newPort = nodeFields.port;
                 var newID = nodeFields.agent_id;
-                console.log("received extend");
+                // console.log("received extend");
                 if (newID == nodeID) {
-                  console.log("extended to self");
+                  console.log("Extending to self");
                   mappings.addCircuitMapping(otherNodeID, circID, null, null);
                   torutils.sendWithoutPromise(protocol.sendRelay)(socket, circID, 0, protocol.RELAY_EXTENDED, null);
                 } else {
