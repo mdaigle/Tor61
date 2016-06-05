@@ -7,7 +7,7 @@
 require('buffer');
 require('dns');
 var torutils = require('./torutils');
-  
+
 exports.initiateConnection = function(msgFields, otherNodeID, circID, resolve, reject) {
   console.log("initating connection");
   var addrStr = msgFields.body.toString(undefined, 0, msgFields.body.length-1);
@@ -53,7 +53,7 @@ exports.initiateConnection = function(msgFields, otherNodeID, circID, resolve, r
           torutils.sendWithoutPromise(protocol.sendRelay)(destSock, circID, streamID, protocol.RELAY_DATA, data.slice(numBytesSent, numBytesSent + segmentLength));
           numBytesSent += segmentLength;
         }
-      } 
+      }
     });
     // Connect to Host/Port
     console.log("connecting");
@@ -66,6 +66,6 @@ exports.initiateConnection = function(msgFields, otherNodeID, circID, resolve, r
         return;
     }
     console.log("dns success");
-    connectToServer(address, hostPort); 
+    connectToServer(address, hostPort);
   });
 }

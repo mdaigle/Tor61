@@ -211,7 +211,8 @@ exports.startClientLoop = function(nid, proxyPort) {
     });
 
     server.on('error', (err) => {
-        console.log("Server error");
+        console.log("Client listening server error");
+        console.log(err);
         process.exit(1);
         //TODO: try broadcasting to clients that we hit an error?
     })
