@@ -36,7 +36,7 @@ exports.initiateConnection = function(msgFields, otherNodeID, circID, resolve, r
         // TODO: remove all stream/socket mappings
         serverSocket.end();
       });
-      // TODO: add stream/socket mapping
+      mappings.addStreamToSocketMapping(otherNodeID, circID, streamID, serverSocket);
       resolve();
     });
     serverSocket.on("data", function(data) {
@@ -44,12 +44,12 @@ exports.initiateConnection = function(msgFields, otherNodeID, circID, resolve, r
       console.log("received data from server");
       var destSock = mappings.getNodeToSocketMapping(otherNodeID);
       // TODO: add protocol.maxRelayBodyLength
-      if (data.length <= protocol.maxRelayBodyLength) {
+      if (data.length <= protocol.MAX_BODY_SIZE) {
         protocol.sendRelay(destSock, circID, streamID, protocol.RELAY_DATA, data);
       } else {
         var numBytesSent = 0;
         while (numBytesSent < data.length) {
-          segmentLength = Math.min(protocol.maxRelayBodyLength, data.length-numBytesSent);
+          segmentLength = Math.min(protocol.MAX_BODY_SIZE, data.length-numBytesSent);
           torutils.sendWithoutPromise(protocol.sendRelay)(destSock, circID, streamID, protocol.RELAY_DATA, data.slice(numBytesSent, numBytesSent + segmentLength));
           numBytesSent += segmentLength;
         }
