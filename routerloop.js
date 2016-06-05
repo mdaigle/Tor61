@@ -230,6 +230,7 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
                 // TODO: can't just publish to streamID because not globally
                 // unique
                 if (msgMap[protocol.RELAY][protocol.RELAY_BEGIN][msgFields.stream_id]) {
+                    console.log("Resolving begin request");
                   msgMap[protocol.RELAY][protocol.RELAY_BEGIN][msgFields.stream_id].resolve();
                   clearTimeout(msgMap[protocol.RELAY][protocol.RELAY_BEGIN][msgFields.stream_id].timeout);
                 }

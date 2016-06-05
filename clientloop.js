@@ -173,9 +173,11 @@ exports.startClientLoop = function(nid, proxyPort) {
                             function() { //success callback
                                 mappings.addStreamToSocketMapping(nid, _circuit_id, _stream_id, clientSocket);
                                 //TODO: break up header before sending (if necessary)
+                                console.log("Stream successfully created");
                                 if (requestType == "CONNECT") {
                                     var msg = "HTTP/1.1 200 OK\r\n\r\n";
                                     clientSocket.write(msg);
+                                    console.log("Sent 200 OK to client");
                                     first_hop_socket.on("error", function() {
                                         var msg = "HTTP/1.1 502 Bad Gateway\r\n\r\n";
                                         clientSocket.write(msg, function() {
