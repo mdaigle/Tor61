@@ -171,13 +171,17 @@ exports.startClientLoop = function(nid, proxyPort) {
 
                         torutils.sendWithPromise(protocol.sendRelay,
                             function() { //success callback
-                                mappings.addStreamToSocketMapping(nid, _circuit_id, _stream_id, clientSocket);
-                                //TODO: break up header before sending (if necessary)
                                 console.log("Stream successfully created");
+                                // console.log(nid + ", " + circuit_id + ", " + stream_id);
+                                // console.log(clientSocket);
+                                mappings.addStreamToSocketMapping(nid, circuit_id, stream_id, clientSocket);
+                                // console.log("Added stream to socket mapping");
+                                //TODO: break up header before sending (if necessary)
                                 if (requestType == "CONNECT") {
                                     var msg = "HTTP/1.1 200 OK\r\n\r\n";
+                                    // console.log("About to send a 200");
                                     clientSocket.write(msg);
-                                    console.log("Sent 200 OK to client");
+                                    // console.log("Sent 200 OK to client");
                                     first_hop_socket.on("error", function() {
                                         var msg = "HTTP/1.1 502 Bad Gateway\r\n\r\n";
                                         clientSocket.write(msg, function() {
@@ -185,6 +189,7 @@ exports.startClientLoop = function(nid, proxyPort) {
                                         });
                                     });
                                 } else {
+                                    // console.log("Not a CONNECT");
                                     torutils.sendWithoutPromise(protocol.sendRelay)(first_hop_socket, circuit_id, stream_id, protocol.RELAY_DATA, data);
                                 }
                                 // Resume listening for data on client socket so

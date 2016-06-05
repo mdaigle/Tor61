@@ -114,26 +114,36 @@ function getStreamToHostMapping(srcID, srcCircID, srcStreamID) {
 }*/
 
 exports.addStreamToSocketMapping = function(srcID, srcCircID, srcStreamID, socket) {
-    if (exports.getCircuitMapping(srcID, srcCircID) != null) {
-        throw "Trying to get stream to client mapping, but we are not the first node in the circuit.";
-    }
-
+    // console.log(exports.getStreamToSocketMapping(srcID, srcCircID, srcStreamID));
     if (exports.getStreamToSocketMapping(srcID, srcCircID, srcStreamID) != null) {
         throw "A mapping already exists for this stream.";
     }
 
+    // console.log(stream_to_socket_map[srcID]);
+    if (stream_to_socket_map[srcID] == null) {
+        stream_to_socket_map[srcID] = {};
+    }
+    // console.log(stream_to_socket_map[srcID][srcCircID]);
+    if (stream_to_socket_map[srcID][srcCircID] == null) {
+        stream_to_socket_map[srcID][srcCircID] = {};
+    }
     stream_to_socket_map[srcID][srcCircID][srcStreamID] = socket;
+
     //stream_to_socket_map[socket] = {nid: srcID, circid: srcCircID, streamid: srcStreamID};
 }
 
 exports.getStreamToSocketMapping = function(srcID, srcCircID, srcStreamID) {
     if (srcID in stream_to_socket_map) {
+        // console.log("id in map");
         if (srcCircID in stream_to_socket_map[srcID]) {
+            // console.log("circid in map");
             if (srcStreamID in stream_to_socket_map[srcID][srcCircID]) {
+                // console.log("stream id in map");
                 return stream_to_socket_map[srcID][srcCircID][srcStreamID];
             }
         }
     }
+    // console.log("its null");
     return null;
 }
 

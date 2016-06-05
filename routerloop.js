@@ -215,7 +215,9 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
                 destSock = mappings.getStreamToSocketMapping(otherNodeID, circID, msgFields.stream_id);
                 if (destSock) {
                   destSock.write(msgFields.body);
-                }
+              } else {
+                  console.log("can't find destination socket for data relay");
+              }
                 break;
 
               case protocol.RELAY_END:
