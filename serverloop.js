@@ -46,8 +46,10 @@ exports.initiateConnection = function(msgFields, otherNodeID, circID, resolve, r
       console.log("received data from server");
       //TODO: if we're the only node, don't relay, just send data
       var destSock = mappings.getNodeToSocketMapping(otherNodeID);
+      console.log("Dest socket is:");
+      console.log(destSock);
       if (data.length <= protocol.MAX_BODY_SIZE) {
-        protocol.sendRelay(destSock, circID, streamID, protocol.RELAY_DATA, data);
+        torutils.sendWithoutPromise(protocol.sendRelay)(destSock, circID, streamID, protocol.RELAY_DATA, data);
       } else {
         var numBytesSent = 0;
         while (numBytesSent < data.length) {
