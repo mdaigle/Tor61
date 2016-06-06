@@ -18,7 +18,7 @@ var serverloop = require('./serverloop');
 var torutils = require('./torutils');
 
 exports.socketSetup = function(socket, nodeID, createdByUs) {
-  console.log("setting up socket");
+  // console.log("setting up socket");
   if (!createdByUs) {
     openTimeout = setTimeout(function() {
       socket.end();
@@ -106,7 +106,7 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
       }
       switch(command) {
         case protocol.OPEN:
-            console.log("<<< Received OPEN from " + msgFields.opener_id);
+            // console.log("<<< Received OPEN from " + msgFields.opener_id);
             clearTimeout(openTimeout);
             if (msgFields.opened_id != nodeID) {
                 protocol.sendOpenFailed(socket, msgFields.opener_id, msgFields.opened_id);
@@ -120,7 +120,7 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
             break;
 
         case protocol.OPENED:
-            console.log("<<< Received OPENED from " + msgFields.opener_id);
+            // console.log("<<< Received OPENED from " + msgFields.opener_id);
           // circuit successfully added the first router
           // add nodeToSocketMapping
           // Or successfully added a new router
@@ -137,7 +137,7 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
             delete msgMap[protocol.OPEN];
           }
           otherNodeID = msgFields.opener_id;
-          console.log("Other node id: " + otherNodeID);
+        //   console.log("Other node id: " + otherNodeID);
           break;
 
         case protocol.OPEN_FAILED:
@@ -153,14 +153,14 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
           break;
 
         case protocol.CREATE:
-            console.log("<<< Received CREATE " + circID);
+            // console.log("<<< Received CREATE " + circID);
           // add mapping and send created
           mappings.addCircuitMapping(otherNodeID, circID, null, null);
           protocol.sendCreated(socket, circID);
           break;
 
         case protocol.CREATED:
-            console.log("<<< Received CREATED " + circID);
+            // console.log("<<< Received CREATED " + circID);
           // mapping successful
         //   console.log("received created on " + circID);
         //   mappings.addCircuitMapping(otherNodeID, circID, nodeID, circID);
@@ -194,7 +194,7 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
           break;
 
         case protocol.RELAY:
-            console.log("<<< Received RELAY " + msgFields.relay_command + " on " + circID);
+            // console.log("<<< Received RELAY " + msgFields.relay_command + " on " + circID);
           // check if end node
           destInfo = mappings.getCircuitMapping(otherNodeID, circID);
           // DONE: add basecase circID -> null for our own circuit
@@ -222,7 +222,7 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
 
               case protocol.RELAY_END:
                 // remove mappings, close socket to server
-                console.log(otherNodeID + ", " + circID + ", " + msgFields.stream_id);
+                // console.log(otherNodeID + ", " + circID + ", " + msgFields.stream_id);
                 // destSock = mappings.getStreamToSocketMapping(otherNodeID, circID, msgFields.stream_id);
                 // destSock.end();
                 mappings.removeStreamToSocketMapping(otherNodeID, circID, msgFields.stream_id);
@@ -232,7 +232,7 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
                 // TODO: can't just publish to streamID because not globally
                 // unique
                 if (msgMap[protocol.RELAY][protocol.RELAY_BEGIN][msgFields.stream_id]) {
-                    console.log("Resolving begin request");
+                    // console.log("Resolving begin request");
                   msgMap[protocol.RELAY][protocol.RELAY_BEGIN][msgFields.stream_id].resolve();
                   clearTimeout(msgMap[protocol.RELAY][protocol.RELAY_BEGIN][msgFields.stream_id].timeout);
                 }

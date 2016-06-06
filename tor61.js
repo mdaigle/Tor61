@@ -114,7 +114,7 @@ function buildCircuit(onCircuitCompletion) {
   }
   maxBuildTries -= 1;
   regagent.fetch("daigle-tsen", function(response) {
-      console.log("Got a fetch response");
+    //   console.log("Got a fetch response");
     if (!("entries" in response)) {
       console.log("reg fail");
       return;
@@ -193,7 +193,7 @@ function buildCircuit(onCircuitCompletion) {
         // console.log("second");
         // TODO: double check function portrait
         if (numLayers > 0) {
-          console.log("extending");
+        //   console.log("extending");
         torutils.extendTorConnection(secondNode.host, secondNode.port, secondNode.service_data, torutils.generateCircID(true), function() {
             console.log("second hop in circuit created to: " + secondNode.service_data);
             do {
@@ -202,9 +202,9 @@ function buildCircuit(onCircuitCompletion) {
                 thirdNode["port"] = firstNode.service_addr.port;
                 numLayers -= 1;
             } while(thirdNode.service_data == nodeID && numLayers >= 0);
-            console.log("third");
+            // console.log("third");
             if (numLayers > 0) {
-                console.log("extending");
+                // console.log("extending");
                 torutils.extendTorConnection(thirdNode.host, thirdNode.port, thirdNode.service_data, torutils.generateCircID(true), function() {
                     console.log("third hop in circuit created to: " + thirdNode.service_data);
                     do {
@@ -213,9 +213,9 @@ function buildCircuit(onCircuitCompletion) {
                         endNode["port"] = firstNode.service_addr.port;
                         numLayers -= 1;
                     } while(endNode.service_data == nodeID && numLayers >= 0);
-                    console.log("end");
+                    // console.log("end");
                     if (numLayers > 0) {
-                        console.log("extending");
+                        // console.log("extending");
                         torutils.extendTorConnection(endNode.host, endNode.port, endNode.service_data, torutils.generateCircID(true), onCircuitCompletion, failCallback);
                     } else {
                         onCircuitCompletion();

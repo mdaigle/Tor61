@@ -43,11 +43,8 @@ exports.initiateConnection = function(msgFields, otherNodeID, circID, resolve, r
     });
     serverSocket.on("data", function(data) {
       // forward data backwards
-      console.log("received data from server");
       //TODO: if we're the only node, don't relay, just send data
       var destSock = mappings.getNodeToSocketMapping(otherNodeID);
-      console.log("Dest socket is:");
-      console.log(destSock);
       if (data.length <= protocol.MAX_BODY_SIZE) {
         torutils.sendWithoutPromise(protocol.sendRelay)(destSock, circID, streamID, protocol.RELAY_DATA, data);
       } else {
@@ -60,7 +57,7 @@ exports.initiateConnection = function(msgFields, otherNodeID, circID, resolve, r
       }
     });
     // Connect to Host/Port
-    console.log("connecting");
+    // console.log("connecting");
     serverSocket.connect(hostPort, hostName);
   }
   dns.lookup(hostName, (err, address, family) => {
@@ -69,7 +66,7 @@ exports.initiateConnection = function(msgFields, otherNodeID, circID, resolve, r
         reject();
         return;
     }
-    console.log("dns success");
+    // console.log("dns success");
     connectToServer(address, hostPort);
   });
 }

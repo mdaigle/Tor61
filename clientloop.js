@@ -49,7 +49,7 @@ exports.startClientLoop = function(nid, proxyPort) {
 
         // do we need to pass as an argument
         clientSocket.on('data', function (data, serverSock) {
-            console.log("Got client data.");
+            // console.log("Got client data.");
             if (!haveSeenEndOfHeader) {
                 var dataString = data.toString('ascii');
                 header += dataString;
@@ -141,11 +141,11 @@ exports.startClientLoop = function(nid, proxyPort) {
 
 
                         } else {
-                            console.log("BASE CIRC ID is " + mappings.BASE_CIRC_ID);
+                            // console.log("BASE CIRC ID is " + mappings.BASE_CIRC_ID);
                             circuit_mapping = mappings.getCircuitMapping(nid, mappings.BASE_CIRC_ID);
-                            console.log("Maps to " + circuit_mapping.nid);
+                            // console.log("Maps to " + circuit_mapping.nid);
                             first_hop_socket = mappings.getNodeToSocketMapping(circuit_mapping.nid);
-                            console.log("Which maps to socket " + first_hop_socket);
+                            // console.log("Which maps to socket " + first_hop_socket);
                             // console.log(first_hop_socket);
                             beginRelay(address, hostPort);
                         }
@@ -178,7 +178,7 @@ exports.startClientLoop = function(nid, proxyPort) {
 
                         torutils.sendWithPromise(protocol.sendRelay,
                             function() { //success callback
-                                console.log("Stream successfully created");
+                                // console.log("Stream successfully created");
                                 // console.log(nid + ", " + circuit_id + ", " + stream_id);
                                 // console.log(clientSocket);
                                 var first_hop = mappings.getCircuitMapping(nid, circuit_id);

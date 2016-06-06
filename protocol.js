@@ -72,7 +72,7 @@ exports.sendCreate = function(res, rej, socket, circuit_id) {
     //console.log("added msg Map for create");
     socket.write(cell);
     //console.log("sent message");
-    console.log(">>> Sent CREATE " + circuit_id);
+    // console.log(">>> Sent CREATE " + circuit_id);
 }
 
 function packCreated(circuit_id) {
@@ -82,7 +82,7 @@ function packCreated(circuit_id) {
 exports.sendCreated = function(socket, circuit_id) {
     cell = packCreated(circuit_id);
     socket.write(cell);
-    console.log(">>> Sent CREATED " + circuit_id);
+    // console.log(">>> Sent CREATED " + circuit_id);
 }
 
 function packDestroy(circuit_id) {
@@ -92,7 +92,7 @@ function packDestroy(circuit_id) {
 exports.sendDestroy = function(socket, circuit_id) {
     cell = packDestroy(circuit_id);
     socket.write(cell);
-    console.log(">>> Sent DESTROY " + circuit_id);
+    // console.log(">>> Sent DESTROY " + circuit_id);
 }
 
 function packOpen(sender_id, receiver_id) {
@@ -113,7 +113,7 @@ exports.sendOpen = function(res, rej, socket, sender_id, receiver_id) {
     //console.log(socket.msgMap);
     //console.log("ADDED TO MAP");
     socket.write(cell);
-    console.log(">>> Sent OPEN " + receiver_id);
+    // console.log(">>> Sent OPEN " + receiver_id);
 }
 
 exports.unpackOpen = function(message_buffer) {
@@ -138,7 +138,7 @@ function packOpened(sender_id, receiver_id) {
 exports.sendOpened = function(socket, sender_id, receiver_id) {
     cell = packOpened(sender_id, receiver_id);
     socket.write(cell);
-    console.log(">>> Sent OPENED " + receiver_id);
+    // console.log(">>> Sent OPENED " + receiver_id);
 }
 
 exports.unpackOpened = function(message_buffer) {
@@ -160,7 +160,7 @@ function packOpenFailed(sender_id, receiver_id) {
 exports.sendOpenFailed = function(socket, sender_id, receiver_id) {
     cell = packOpenFailed(sender_id, receiver_id);
     socket.write(cell);
-    console.log(">>> Sent OPEN_FAILED " + receiver_id);
+    // console.log(">>> Sent OPEN_FAILED " + receiver_id);
 }
 
 exports.unpackOpenFailed = function(message_buffer) {
@@ -174,7 +174,7 @@ function packCreateFailed(circuit_id) {
 exports.sendCreateFailed = function(socket, circuit_id) {
     cell = packCreateFailed(circuit_id);
     socket.write(cell);
-    console.log(">>> Sent CREATE_FAILED " + circuit_id);
+    // console.log(">>> Sent CREATE_FAILED " + circuit_id);
 }
 
 // Body parameter should be a buffer.
@@ -210,12 +210,12 @@ exports.sendRelay = function(res, rej, socket, circuit_id, stream_id, relay_comm
     //console.log(socket.msgMap);
     //console.log(socket.msgMap[RELAY]);
     //console.log(relay_command);
-    console.log(socket);
+    // console.log(socket);
     socket.msgMap[RELAY][relay_command][stream_id] = data;//{resolve: res, reject: rej, timeout:setTimeout(function(){rej();}, TIMEOUT)};
   }
   //console.log("added mappings");
   socket.write(cell);
-  console.log(">>> Sent RELAY " + relay_command + " on circuit " + circuit_id);
+  // console.log(">>> Sent RELAY " + relay_command + " on circuit " + circuit_id);
 }
 
 exports.unpackRelay = function(message_buffer) {
