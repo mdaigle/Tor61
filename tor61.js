@@ -104,9 +104,15 @@ torNode.listen(torNodePort); // can add callback
 //   // same thing but pick a node and send relay extend
 //
 // }
-
+var maxBuildTries = 4;
 // TODO: fix parsing of host port
 function buildCircuit(onCircuitCompletion) {
+  if (maxBuildTries < 0) {
+    console.log("Failed to build a circuit. Shutting down.");
+    // TODO: shutdown cleanly
+    process.exit(0);
+  }
+  maxBuildTries -= 1;
   regagent.fetch("daigle-tsen", function(response) {
       console.log("Got a fetch response");
     if (!("entries" in response)) {
@@ -214,16 +220,16 @@ function buildCircuit(onCircuitCompletion) {
                     } else {
                         onCircuitCompletion();
                     }
-                }, failCallback);
+                }.bind(this), failCallback);
           } else {
               console.log("no fourth");
               onCircuitCompletion();
           }
-        }, failCallback);
+        }.bind(this), failCallback);
         } else {
         onCircuitCompletion();
       }
-      }, failCallback);
+      }.bind(this), failCallback);
       } else {
         onCircuitCompletion();
       }
@@ -260,7 +266,7 @@ regagent.setupRegAgent(function(){
             clientloop.startClientLoop(nodeID, proxyPort);
             rl.resume();
         })
-    });
+    }.bind(this));
 });});
 /*
  * If routerList is empty and no other nodes exist,

@@ -88,7 +88,7 @@ exports.openTorConnection = function(host, port, nodeID, receiverID, successCall
    // console.log("created new socket");
   routerloop.socketSetup(newSock, nodeID, true);
   } else {
-  exports.sendWithPromise(protocol.sendOpen, successCallback.bind(this, newSock), failCallback)(newSock, nodeID, receiverID);
+  exports.sendWithPromise(protocol.sendOpen, successCallback.bind(null, newSock), failCallback)(newSock, nodeID, receiverID);
   // console.log("sent open");
   }
 }
@@ -122,7 +122,7 @@ exports.createFirstHop = function(host, port, nodeID, receiverID, circID, succes
     //console.log(newSock.msgMap);
     exports.createTorCircuit(receiverID, circID, successCallback, failCallback);
   }
-  exports.openTorConnection(host, port, nodeID, receiverID, openSuccessCallback, failCallback);
+  exports.openTorConnection(host, port, nodeID, receiverID, openSuccessCallback.bind(this), failCallback);
 }
 
 Object.freeze(exports);

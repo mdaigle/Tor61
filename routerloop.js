@@ -257,9 +257,9 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
                     mappings.addCircuitMapping(otherNodeID, circID, newID, newCircID);
                     mappings.addCircuitMapping(newID, newCircID, otherNodeID, circID);
                     torutils.sendWithoutPromise(protocol.sendRelay)(socket, circID, 0, protocol.RELAY_EXTENDED, null);
-                  }, function() {
+                  }.bind(this), function() {
                     torutils.sendWithoutPromise(protocol.sendRelay)(responseSock, circID, 0, protocol.RELAY_EXTEND_FAILED, null);
-                  });
+                  }.bind(this));
                 }
                 break;
 

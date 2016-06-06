@@ -133,7 +133,7 @@ exports.startClientLoop = function(nid, proxyPort) {
                                 } else {
                                     first_hop_socket.write(modifiedHeader);
                                 }
-                            });
+                            }.bind(this));
                             first_hop_socket.on("data", (data) => {
                             //    console.log("data!");
                                clientSocket.write(data);
@@ -155,10 +155,17 @@ exports.startClientLoop = function(nid, proxyPort) {
                             //TODO: error handling
                             console.log("first hop sock err");
                             console.log(err);
-                            clientSocket.end();
+                            if (mappings.BASE_CIRC_ID != 0) {
+                              otherNode = mappings.getCircuitMapping(nid, mappings.BASE_CIRC_ID);
+                              mappings.removeNodeToSocketMapping(otherNode.nid);
+                              mappings.removeStreamToSocketMapping(stream_id);
+                            }
+                            first_hop_socket.end();
+                            clientSocket.destroy();
                         });
                         first_hop_socket.on("close", () => {
                             clientSocket.end();
+                            first_hop_socket.end();
                         })
                     });
 
@@ -196,19 +203,19 @@ exports.startClientLoop = function(nid, proxyPort) {
                                 // Resume listening for data on client socket so
                                 // that we can forward it along the new stream.
                                 clientSocket.resume();
-                            },
+                            }.bind(this),
                             function () { //fail callback
                                 var msg = "HTTP/1.1 502 Bad Gateway\r\n\r\n";
                                 clientSocket.write(msg, function() {
                                     clientSocket.end();
                                 });
-                            })(first_hop_socket, circuit_id, stream_id, protocol.RELAY_BEGIN, body);
+                            }.bind(this))(first_hop_socket, circuit_id, stream_id, protocol.RELAY_BEGIN, body);
                       }
                 }
             } else {
                 if (mappings.BASE_CIRC_ID != 0) {
                     while (data.length > protocol.MAX_BODY_SIZE) {
-                        smaller_data = Buffer.from(data, protocol.MAX_BODY_SIZE);
+                        smaller_data = data.slice(0, Math.min(protocol.MAX_BODY_SIZE, data.length));
                         torutils.sendWithoutPromise(protocol.sendRelay)(first_hop_socket, circuit_id, stream_id, protocol.RELAY_DATA, data);
                         data = data.slice(protocol.MAX_BODY_SIZE);
                     }
