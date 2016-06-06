@@ -210,6 +210,7 @@ exports.sendRelay = function(res, rej, socket, circuit_id, stream_id, relay_comm
     //console.log(socket.msgMap);
     //console.log(socket.msgMap[RELAY]);
     //console.log(relay_command);
+    console.log(socket);
     socket.msgMap[RELAY][relay_command][stream_id] = data;//{resolve: res, reject: rej, timeout:setTimeout(function(){rej();}, TIMEOUT)};
   }
   //console.log("added mappings");

@@ -88,7 +88,7 @@ exports.openTorConnection = function(host, port, nodeID, receiverID, successCall
    // console.log("created new socket");
   routerloop.socketSetup(newSock, nodeID, true);
   } else {
-  exports.sendWithPromise(protocol.sendOpen, successCallback.bind(null, newSock), failCallback)(newSock, nodeID, receiverID);
+  exports.sendWithPromise(protocol.sendOpen, successCallback.bind(this, newSock), failCallback)(newSock, nodeID, receiverID);
   // console.log("sent open");
   }
 }
