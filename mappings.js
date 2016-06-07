@@ -5,6 +5,15 @@ var circuit_map = {};
 var stream_to_socket_map = {};
 var node_to_socket_map = {};
 
+exports.getCircIDPartition(nodeID) {
+    if (nodeID in circuit_map) {
+        if (circuit_map[nodeID].length > 0) {
+            return (circuit_map[nodeID][0].circid+1)%2;
+        }
+    }
+    return true;
+}
+
 exports.addNodeToSocketMapping = function(nid, socket) {
     //TODO: check for overwrites?
     if (nid in node_to_socket_map && node_to_socket_map[nid] != null) {

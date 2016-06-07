@@ -254,7 +254,8 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
                 //   mappings.addCircuitMapping(otherNodeID, circID, null, null);
                     torutils.sendWithoutPromise(protocol.sendRelay)(socket, circID, 0, protocol.RELAY_EXTENDED, null);
                 } else {
-                  var newCircID = torutils.generateCircID((mappings.getNodeToSocketMapping(newID) == null));
+                    //TODO: look at first mapping
+                  var newCircID = torutils.generateCircID(mappings.getCircIDPartition(newID));
                   torutils.createFirstHop(newHost, newPort, nodeID, newID, newCircID, function() {
                       console.log("Hit the extend callback");
                     mappings.addCircuitMapping(otherNodeID, circID, newID, newCircID);
