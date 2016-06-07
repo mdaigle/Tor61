@@ -80,6 +80,8 @@ exports.openTorConnection = function(host, port, nodeID, receiverID, successCall
       });
   routerloop.socketSetup(newSock, nodeID, true);
   } else {
+  // TODO: dont send open if already sock. jsut execute success callback with
+  // sock
   exports.sendWithPromise(protocol.sendOpen, successCallback.bind(this, newSock), failCallback)(newSock, nodeID, receiverID);
   }
 }

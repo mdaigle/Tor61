@@ -7,8 +7,8 @@ var node_to_socket_map = {};
 
 exports.getCircIDPartition = function(nodeID) {
     if (nodeID in circuit_map) {
-        if (circuit_map[nodeID].length > 0) {
-            return (circuit_map[nodeID][0].circid+1)%2;
+        if (circuit_map[nodeID].keys()length() > 0) {
+            return (circuit_map[nodeID][circuit_map[nodeID].keys()[0]].circid+1)%2;
         }
     }
     return true;
