@@ -202,6 +202,7 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
           // DONE: add basecase circID -> null for our own circuit
           if (destInfo == null || destInfo.nid == null || destInfo.circid == null) {
             // yay end node
+            console.log("YAY END NODE");
             switch (msgFields.relay_command) {
               case protocol.RELAY_BEGIN:
                 (new Promise(function(resolve, reject){
@@ -213,13 +214,18 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
                 });
                 break;
               case protocol.RELAY_DATA:
+                console.log("IN RELAY_DATA");
                 // get streamID and find socket, forward data
                 destSock = mappings.getStreamToSocketMapping(otherNodeID, circID, msgFields.stream_id);
+                console.log("GOT MAPPING: ");
+                console.log(destSock);
                 if (destSock) {
+                  console.log("PREPARING TO WRITE");
                   destSock.write(msgFields.body);
-              } else {
-                  console.log("can't find destination socket for data relay");
-              }
+                  console.log("WROTE");
+                } else {
+                    console.log("can't find destination socket for data relay");
+                }
                 break;
 
               case protocol.RELAY_END:
