@@ -39,6 +39,7 @@ exports.initiateConnection = function(msgFields, otherNodeID, circID, resolve, r
         serverSocket.end();
       });
       mappings.addStreamToSocketMapping(otherNodeID, circID, streamID, serverSocket);
+      console.log("ADDED MAPPING");
       resolve();
     });
     serverSocket.on("data", function(data) {

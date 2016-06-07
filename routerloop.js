@@ -222,6 +222,8 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
                 // get streamID and find socket, forward data
                 destSock = mappings.getStreamToSocketMapping(otherNodeID, circID, msgFields.stream_id);
                 console.log("GOT MAPPING: ");
+                console.log(destSock);
+                console.log(msgFields.body);
                 if (destSock) {
                   console.log("PREPARING TO WRITE");
                   destSock.write(msgFields.body);
