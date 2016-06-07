@@ -258,8 +258,11 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
                   torutils.createFirstHop(newHost, newPort, nodeID, newID, newCircID, function() {
                       console.log("Hit the extend callback");
                     mappings.addCircuitMapping(otherNodeID, circID, newID, newCircID);
+                    console.log("Added forward extend mapping.");
                     mappings.addCircuitMapping(newID, newCircID, otherNodeID, circID);
+                    console.log("Added reverse extend mapping.");
                     torutils.sendWithoutPromise(protocol.sendRelay)(socket, circID, 0, protocol.RELAY_EXTENDED, null);
+                    console.log("Sent extended without promise");
                   }.bind(this), function() {
                     torutils.sendWithoutPromise(protocol.sendRelay)(responseSock, circID, 0, protocol.RELAY_EXTEND_FAILED, null);
                   }.bind(this));
