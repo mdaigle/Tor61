@@ -168,7 +168,7 @@ function buildCircuit(onCircuitCompletion) {
         console.log("Failed");
         buildCircuit(onCircuitCompletion);
       }
-      firstCircID = torutils.generateCircID((mappings.getNodeToSocketMapping(firstNode.service_data) == null));
+      firstCircID = torutils.generateCircID(mappings.getCircIDPartition(firstNode.service_data));
       if (numLayers > 0) {
       torutils.createFirstHop(firstNode.host, firstNode.port, nodeID, firstNode.service_data, firstCircID, function() {
         console.log("========> First hop in circuit created to: " + firstNode.service_data);
