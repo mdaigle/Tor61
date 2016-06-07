@@ -44,13 +44,20 @@ exports.initiateConnection = function(msgFields, otherNodeID, circID, resolve, r
     serverSocket.on("data", function(data) {
       // forward data backwards
       //TODO: if we're the only node, don't relay, just send data
+      console.log("in data");
       var destSock = mappings.getNodeToSocketMapping(otherNodeID);
+      console.log("destsock");
       if (data.length <= protocol.MAX_BODY_SIZE) {
+        console.log("small packet");
         torutils.sendWithoutPromise(protocol.sendRelay)(destSock, circID, streamID, protocol.RELAY_DATA, data);
+        console.log("relayed");
       } else {
+        console.log("big packet");
         var numBytesSent = 0;
         while (numBytesSent < data.length) {
+          console.log("shrinking");
           segmentLength = Math.min(protocol.MAX_BODY_SIZE, data.length-numBytesSent);
+          console.log("segement length");
           torutils.sendWithoutPromise(protocol.sendRelay)(destSock, circID, streamID, protocol.RELAY_DATA, data.slice(numBytesSent, numBytesSent + segmentLength));
           numBytesSent += segmentLength;
         }
