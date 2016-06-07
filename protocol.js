@@ -106,14 +106,14 @@ function packOpen(sender_id, receiver_id) {
     return message_buffer;
 }
 
-exports.sendOpen = function(res, rej, socket, sender_id, receiver_id) {
-    cell = packOpen(sender_id, receiver_id);
+exports.sendOpen = function(res, rej, socket, opener_id, opened_id) {
+    cell = packOpen(opener_id, opened_id);
     //console.log(socket.msgMap);
     socket.msgMap[OPEN] = {resolve: res, reject: rej, timeout: setTimeout(function(){console.log("timeout");rej();}, TIMEOUT)};
     //console.log(socket.msgMap);
     //console.log("ADDED TO MAP");
     socket.write(cell);
-    console.log(">>> Sent OPEN " + receiver_id);
+    console.log(">>> Sent OPEN " + opened_id);
 }
 
 exports.unpackOpen = function(message_buffer) {
@@ -123,22 +123,22 @@ exports.unpackOpen = function(message_buffer) {
     return msg;
 }
 
-function packOpened(sender_id, receiver_id) {
+function packOpened(opener_id, opened_id) {
     message_buffer = new Buffer(512);
     message_buffer.fill(0);
     message_buffer = packMainFields(0, OPENED, message_buffer);
 
     // Same as an open, so ids should stay in same order
-    message_buffer.writeUInt32BE(receiver_id, 3);
-    message_buffer.writeUInt32BE(sender_id, 7);
+    message_buffer.writeUInt32BE(opener_id, 3);
+    message_buffer.writeUInt32BE(opened_id, 7);
 
     return message_buffer;
 }
 
-exports.sendOpened = function(socket, sender_id, receiver_id) {
-    cell = packOpened(sender_id, receiver_id);
+exports.sendOpened = function(socket, opener_id, opened_id) {
+    cell = packOpened(opener_id, opened_id);
     socket.write(cell);
-    console.log(">>> Sent OPENED " + receiver_id);
+    console.log(">>> Sent OPENED " + opener_id);
 }
 
 exports.unpackOpened = function(message_buffer) {

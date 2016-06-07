@@ -265,7 +265,6 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
 
               case protocol.RELAY_EXTENDED:
                 // execute callback
-                console.log("In relay extended handler");
                 if (msgMap[protocol.RELAY][protocol.RELAY_EXTEND][msgFields.stream_id]) {
                   msgMap[protocol.RELAY][protocol.RELAY_EXTEND][msgFields.stream_id].resolve();
                   clearTimeout(msgMap[protocol.RELAY][protocol.RELAY_EXTEND][msgFields.stream_id].timeout);

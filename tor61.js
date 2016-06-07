@@ -108,7 +108,7 @@ function buildCircuit(onCircuitCompletion) {
     process.exit(0);
   }
   maxBuildTries -= 1;
-  regagent.fetch("Tor61Router", function(response) {
+  regagent.fetch("Tor61Router-0666", function(response) {
     //   console.log("Got a fetch response");
     if (!("entries" in response)) {
       console.log("reg fail");
