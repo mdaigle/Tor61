@@ -87,9 +87,7 @@ exports.openTorConnection = function(host, port, nodeID, receiverID, successCall
 exports.createTorCircuit = function(nodeID, circID, successCallback, failCallback) {
   //console.log("sending create");
   var socket = mappings.getNodeToSocketMapping(nodeID);
-  var temp = exports.sendWithPromise(protocol.sendCreate, successCallback, failCallback);
-  //console.log("actually try to send");
-  temp(socket, circID);
+  exports.sendWithPromise(protocol.sendCreate, successCallback, failCallback)(socket, circID);
   // console.log("sent create");
   //console.log(socket.UUID);
   //console.log(socket.msgMap);
