@@ -14,12 +14,7 @@ exports.parseIP = function(ip_as_int) {
     return ip;
 }
 
-exports.generateNodeID = function(ip, port) {
-    //TODO: legit hash at some point?
-    /*var components = ip.split('.');
-    for (var i = 0; i < components.length; i++) {
-        message_buffer.writeUInt8(parseInt(components[i]), 4 + i);
-    }*/
+exports.generateNodeID = function() {
     bytes = crypto.randomBytes(4);
     return bytes.readUInt32BE(0);
 }
@@ -81,15 +76,11 @@ exports.openTorConnection = function(host, port, nodeID, receiverID, successCall
   if (newSock == null) {
     newSock = net.createConnection({host: host, port:port}, () => {
      exports.sendWithPromise(protocol.sendOpen, successCallback.bind(null, newSock), failCallback)(newSock, nodeID, receiverID);
-  // console.log("sent open");
 
       });
-    newSock.UUID = Math.random()*10000;
-   // console.log("created new socket");
   routerloop.socketSetup(newSock, nodeID, true);
   } else {
   exports.sendWithPromise(protocol.sendOpen, successCallback.bind(this, newSock), failCallback)(newSock, nodeID, receiverID);
-  // console.log("sent open");
   }
 }
 
@@ -104,12 +95,9 @@ exports.createTorCircuit = function(nodeID, circID, successCallback, failCallbac
   //console.log(socket.msgMap);
 }
 
-exports.extendTorConnection = function(host, port, receiverID, circID, successCallback, failCallback) {
+exports.extendTorConnection = function(host, port, receiverID, circID, socket, successCallback, failCallback) {
   // console.log("in extend");
   var bodyBuf = packExtendBody(host, port, receiverID);
-  // console.log("passed Pack");
-  var socket = mappings.getNodeToSocketMapping(receiverID);
-  // console.log("packed");
   exports.sendWithPromise(protocol.sendRelay, successCallback, failCallback)(socket, circID, 0, protocol.RELAY_EXTEND, bodyBuf);
   // console.log("sent extend with promise");
 }

@@ -106,7 +106,7 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
       }
       switch(command) {
         case protocol.OPEN:
-            // console.log("<<< Received OPEN from " + msgFields.opener_id);
+            console.log("<<< Received OPEN from " + msgFields.opener_id);
             clearTimeout(openTimeout);
             if (msgFields.opened_id != nodeID) {
                 protocol.sendOpenFailed(socket, msgFields.opener_id, msgFields.opened_id);
@@ -120,7 +120,7 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
             break;
 
         case protocol.OPENED:
-            // console.log("<<< Received OPENED from " + msgFields.opener_id);
+            console.log("<<< Received OPENED from " + msgFields.opened_id);
           // circuit successfully added the first router
           // add nodeToSocketMapping
           // Or successfully added a new router
@@ -136,7 +136,7 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
             clearTimeout(msgMap[protocol.OPEN].timeout);
             delete msgMap[protocol.OPEN];
           }
-          otherNodeID = msgFields.opener_id;
+          otherNodeID = msgFields.opened_id;
         //   console.log("Other node id: " + otherNodeID);
           break;
 
@@ -153,14 +153,14 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
           break;
 
         case protocol.CREATE:
-            // console.log("<<< Received CREATE " + circID);
+            console.log("<<< Received CREATE " + circID + " from " + otherNodeID);
           // add mapping and send created
           mappings.addCircuitMapping(otherNodeID, circID, null, null);
           protocol.sendCreated(socket, circID);
           break;
 
         case protocol.CREATED:
-            // console.log("<<< Received CREATED " + circID);
+            console.log("<<< Received CREATED " + circID + " from " + otherNodeID);
           // mapping successful
         //   console.log("received created on " + circID);
         //   mappings.addCircuitMapping(otherNodeID, circID, nodeID, circID);
@@ -175,7 +175,7 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
           break;
 
         case protocol.CREATE_FAILED:
-            console.log("<<< Received CREATE_FAILED " + circID);
+            console.log("<<< Received CREATE_FAILED " + circID + " from " + otherNodeID);
           // we failed. Either send an extend failed OR we failed to connect to
           // the first router in our circuit and need to restart
           if (protocol.CREATE in msgMap && msgMap[protocol.CREATE] != null) {
@@ -186,7 +186,7 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
           break;
 
         case protocol.DESTROY:
-            console.log("<<< Received DESTROY " + circID);
+            console.log("<<< Received DESTROY " + circID + " from " + otherNodeID);
           destInfo = mappings.getCircuitMapping(otherNodeID, circID);
           otherSock = mappings.getNodeToSocketMapping(destInfo.nid);
           protocol.sendDestroy(otherSock, destInfo.circid);
@@ -194,7 +194,7 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
           break;
 
         case protocol.RELAY:
-            // console.log("<<< Received RELAY " + msgFields.relay_command + " on " + circID);
+            console.log("<<< Received RELAY " + msgFields.relay_command + " on " + circID + " from " + otherNodeID);
           // check if end node
           destInfo = mappings.getCircuitMapping(otherNodeID, circID);
           // DONE: add basecase circID -> null for our own circuit
@@ -265,6 +265,7 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
 
               case protocol.RELAY_EXTENDED:
                 // execute callback
+                console.log("In relay extended handler");
                 if (msgMap[protocol.RELAY][protocol.RELAY_EXTEND][msgFields.stream_id]) {
                   msgMap[protocol.RELAY][protocol.RELAY_EXTEND][msgFields.stream_id].resolve();
                   clearTimeout(msgMap[protocol.RELAY][protocol.RELAY_EXTEND][msgFields.stream_id].timeout);

@@ -15,24 +15,19 @@ var routerloop = require('./routerloop');
 var torutils = require('./torutils');
 var regagent = require('./regagent');
 
-// SETUP
-// Setup listening socket, but ignore requests until registered
-//  handlers
-// Setup any datastructures
-// Build a circuit:
-//  Connect to other nodes
-// Register with reg service
-//  Need way to interface with reg service
+var args = process.argv.slice(2);
+var torNodePort =  1461;
+var group_num = args[0];
+var instance_num = args[1];
+var proxyPort = args[2];
+
 var nodeID = torutils.generateNodeID();
 console.log("nodeID:" + nodeID);
-var args = process.argv.slice(2);
-var torNodePort =  1461;//args[0]; // CHANGE
-var SID = 11;
-var proxyPort = args[2];
+
+var service_name = "Tor61Router-" + group_num + "-" + instance_num;
 
 // need mapping from nodes -> sockets
 var torNode = net.createServer((socket) => {
-  socket.UUID = SID++;
   routerloop.socketSetup(socket, nodeID, false);
 });
 
@@ -113,7 +108,7 @@ function buildCircuit(onCircuitCompletion) {
     process.exit(0);
   }
   maxBuildTries -= 1;
-  regagent.fetch("daigle-tsen", function(response) {
+  regagent.fetch("Tor61Router", function(response) {
     //   console.log("Got a fetch response");
     if (!("entries" in response)) {
       console.log("reg fail");
@@ -176,47 +171,48 @@ function buildCircuit(onCircuitCompletion) {
       firstCircID = torutils.generateCircID((mappings.getNodeToSocketMapping(firstNode.service_data) == null));
       if (numLayers > 0) {
       torutils.createFirstHop(firstNode.host, firstNode.port, nodeID, firstNode.service_data, firstCircID, function() {
-        console.log("first hop in circuit created to: " + firstNode.service_data);
+        console.log("========> First hop in circuit created to: " + firstNode.service_data);
         mappings.BASE_CIRC_ID = firstCircID;
+        var first_hop_socket = mappings.getNodeToSocketMapping(firstNode.service_data);
 
         mappings.addCircuitMapping(nodeID, firstCircID, firstNode.service_data, firstCircID);
         mappings.addCircuitMapping(firstNode.service_data, firstCircID, null, null);
 
         do {
-        //console.log("in loop");
         secondNode = resultList[Math.floor(Math.random()*resultList.length)];
-        secondNode["host"] = torutils.parseIP(firstNode.service_addr.address);
-        secondNode["port"] = firstNode.service_addr.port;
+        secondNode["host"] = torutils.parseIP(secondNode.service_addr.address);
+        secondNode["port"] = secondNode.service_addr.port;
         numLayers -= 1;
-        //console.log("end of loop");
+        console.log("Attempting to extend to " + secondNode.service_data);
         } while (secondNode.service_data == nodeID && numLayers >= 0);
-        // console.log("second");
         // TODO: double check function portrait
         if (numLayers > 0) {
         //   console.log("extending");
-        torutils.extendTorConnection(secondNode.host, secondNode.port, secondNode.service_data, torutils.generateCircID(true), function() {
-            console.log("second hop in circuit created to: " + secondNode.service_data);
+        torutils.extendTorConnection(secondNode.host, secondNode.port, secondNode.service_data, firstCircID, first_hop_socket, function() {
+            console.log("========> Second hop in circuit created to: " + secondNode.service_data);
             do {
                 thirdNode = resultList[Math.floor(Math.random()*resultList.length)];
-                thirdNode["host"] = torutils.parseIP(firstNode.service_addr.address);
-                thirdNode["port"] = firstNode.service_addr.port;
+                thirdNode["host"] = torutils.parseIP(thirdNode.service_addr.address);
+                thirdNode["port"] = thirdNode.service_addr.port;
                 numLayers -= 1;
+                console.log("Attempting to extend to " + thirdNode.service_data);
             } while(thirdNode.service_data == nodeID && numLayers >= 0);
             // console.log("third");
             if (numLayers > 0) {
                 // console.log("extending");
-                torutils.extendTorConnection(thirdNode.host, thirdNode.port, thirdNode.service_data, torutils.generateCircID(true), function() {
-                    console.log("third hop in circuit created to: " + thirdNode.service_data);
+                torutils.extendTorConnection(thirdNode.host, thirdNode.port, thirdNode.service_data, firstCircID, first_hop_socket, function() {
+                    console.log("========> Third hop in circuit created to: " + thirdNode.service_data);
                     do {
                         endNode = resultList[Math.floor(Math.random() *resultList.length)];
-                        endNode["host"] = torutils.parseIP(firstNode.service_addr.address);
-                        endNode["port"] = firstNode.service_addr.port;
+                        endNode["host"] = torutils.parseIP(endNode.service_addr.address);
+                        endNode["port"] = endNode.service_addr.port;
                         numLayers -= 1;
+                        console.log("Attempting to extend to " + endNode.service_data);
                     } while(endNode.service_data == nodeID && numLayers >= 0);
                     // console.log("end");
                     if (numLayers > 0) {
                         // console.log("extending");
-                        torutils.extendTorConnection(endNode.host, endNode.port, endNode.service_data, torutils.generateCircID(true), onCircuitCompletion, failCallback);
+                        torutils.extendTorConnection(endNode.host, endNode.port, endNode.service_data, firstCircID, first_hop_socket, onCircuitCompletion, failCallback);
                     } else {
                         onCircuitCompletion();
                     }
@@ -261,7 +257,7 @@ rl.on('close', () => {
 regagent.setupRegAgent(function(){
     regagent.unregister(torNodePort, function() {
     buildCircuit(function(){
-        regagent.register(torNodePort, nodeID, "daigle-tsen", function(){
+        regagent.register(torNodePort, nodeID, service_name, function(){
             console.log("registered");
             clientloop.startClientLoop(nodeID, proxyPort);
             rl.resume();
