@@ -168,7 +168,9 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
           if (protocol.CREATE in msgMap && msgMap[protocol.CREATE] != null) {
             // console.log(socket.UUID);
             // console.log(msgMap);
+            console.log("About to resolve create");
             msgMap[protocol.CREATE][circID].resolve();
+            console.log("Resolved create");
             clearTimeout(msgMap[protocol.CREATE][circID].timeout);
             delete msgMap[protocol.CREATE][circID];
           }
@@ -254,6 +256,7 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
                 } else {
                   var newCircID = torutils.generateCircID((mappings.getNodeToSocketMapping(newID) == null));
                   torutils.createFirstHop(newHost, newPort, nodeID, newID, newCircID, function() {
+                      console.log("Hit the extend callback");
                     mappings.addCircuitMapping(otherNodeID, circID, newID, newCircID);
                     mappings.addCircuitMapping(newID, newCircID, otherNodeID, circID);
                     torutils.sendWithoutPromise(protocol.sendRelay)(socket, circID, 0, protocol.RELAY_EXTENDED, null);
