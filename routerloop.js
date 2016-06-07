@@ -200,13 +200,13 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
           break;
 
         case protocol.RELAY:
-            console.log("<<< Received RELAY " + msgFields.relay_command + " on " + circID + " from " + otherNodeID);
+            // console.log("<<< Received RELAY " + msgFields.relay_command + " on " + circID + " from " + otherNodeID);
           // check if end node
           destInfo = mappings.getCircuitMapping(otherNodeID, circID);
           // DONE: add basecase circID -> null for our own circuit
           if (destInfo == null || destInfo.nid == null || destInfo.circid == null) {
             // yay end node
-            console.log("YAY END NODE");
+            // console.log("YAY END NODE");
             switch (msgFields.relay_command) {
               case protocol.RELAY_BEGIN:
                 (new Promise(function(resolve, reject){
@@ -261,20 +261,20 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
                 var newID = nodeFields.agent_id;
                 // console.log("received extend");
                 if (newID == nodeID) {
-                  console.log("Extending to self");
+                //   console.log("Extending to self");
                 //   mappings.addCircuitMapping(otherNodeID, circID, null, null);
                     torutils.sendWithoutPromise(protocol.sendRelay)(socket, circID, 0, protocol.RELAY_EXTENDED, null);
                 } else {
                     //TODO: look at first mapping
                   var newCircID = torutils.generateCircID(mappings.getCircIDPartition(newID));
                   torutils.createFirstHop(newHost, newPort, nodeID, newID, newCircID, function() {
-                      console.log("Hit the extend callback");
+                    //   console.log("Hit the extend callback");
                     mappings.addCircuitMapping(otherNodeID, circID, newID, newCircID);
-                    console.log("Added forward extend mapping.");
+                    // console.log("Added forward extend mapping.");
                     mappings.addCircuitMapping(newID, newCircID, otherNodeID, circID);
-                    console.log("Added reverse extend mapping.");
+                    // console.log("Added reverse extend mapping.");
                     torutils.sendWithoutPromise(protocol.sendRelay)(socket, circID, 0, protocol.RELAY_EXTENDED, null);
-                    console.log("Sent extended without promise");
+                    // console.log("Sent extended without promise");
                   }.bind(this), function() {
                     torutils.sendWithoutPromise(protocol.sendRelay)(responseSock, circID, 0, protocol.RELAY_EXTEND_FAILED, null);
                   }.bind(this));
@@ -290,6 +290,8 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
                 break;
 
               case protocol.RELAY_BEGIN_FAILED:
+                console.log("<<< Received RELAY " + msgFields.relay_command + " on " + circID + " from " + otherNodeID);
+
                 // close socket or server 404 etc.
                 if (msgMap[protocol.RELAY][protocol.RELAY_BEGIN][msgFields.stream_id]) {
                   msgMap[protocol.RELAY][protocol.RELAY_BEGIN][msgFields.stream_id].reject();
@@ -298,7 +300,8 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
                 break;
 
               case protocol.RELAY_EXTEND_FAILED:
-                console.log("extend failed");
+                console.log("<<< Received RELAY " + msgFields.relay_command + " on " + circID + " from " + otherNodeID);
+
                 // restart our socket building
                 if (msgMap[protocol.RELAY][protocol.RELAY_EXTEND][msgFields.stream_id]) {
                   msgMap[protocol.RELAY][protocol.RELAY_EXTEND][msgFields.stream_id].reject();
