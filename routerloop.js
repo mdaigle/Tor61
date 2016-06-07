@@ -115,6 +115,8 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
             protocol.sendOpened(socket, msgFields.opener_id, msgFields.opened_id);
             if (!createdByUs) {
                 socketValidated = true;
+                // add mapping false
+                mappings.addCircIDPartition(msgFields.opener_id, false);
             }
             otherNodeID = msgFields.opener_id;
             break;
@@ -126,6 +128,8 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
           // Or successfully added a new router
           if (createdByUs) {
             socketValidated = true;
+            // add mapping true
+            mappings.addCircIDPartition(msgFields.opened_id, true);
           }
           mappings.addNodeToSocketMapping(msgFields.opened_id, socket);
           if (protocol.OPEN in msgMap && msgMap[protocol.OPEN] != null) {

@@ -4,12 +4,15 @@ exports.BASE_CIRC_ID = 0;
 var circuit_map = {};
 var stream_to_socket_map = {};
 var node_to_socket_map = {};
+var circ_id_partition = {};
+
+exports.addCircIDPartition= function(nodeID, value) {
+  circ_id_partition[nodeID] = value;
+}
 
 exports.getCircIDPartition = function(nodeID) {
-    if (nodeID in circuit_map) {
-        if (Object.keys(circuit_map[nodeID]).length > 0) {
-            return (parseInt(Object.keys(circuit_map[nodeID])[0])+1)%2;
-        }
+    if (nodeID in circ_id_partition) {
+      return circ_id_partition[nodeID];
     }
     return true;
 }
