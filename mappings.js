@@ -26,7 +26,7 @@ exports.getNodeToSocketMapping = function(nid) {
 
 exports.addCircuitMapping = function(srcID, srcCircID, destID, destCircID) {
     if (exports.getCircuitMapping(srcID, srcCircID) != null) {
-        throw "Duplicate mapping for source circuit id.";
+        console.log("Overwriting mapping");
     }
 
     if (!(srcID in circuit_map)) {
