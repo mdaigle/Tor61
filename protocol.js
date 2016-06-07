@@ -66,6 +66,10 @@ exports.sendCreate = function(res, rej, socket, circuit_id) {
     // console.log("in send create");
     cell = packCreate(circuit_id);
     // console.log("packed with ID" + circuit_id);
+    if (socket == null) {
+        console.log("Trying to send CREATE " + circuit_id + " but socket no longer exists.");
+        return;
+    }
     socket.msgMap[CREATE][circuit_id] = {resolve: res, reject: rej, timeout: setTimeout(function(){console.log("timeout");rej();}, TIMEOUT)};
     //console.log(socket.UUID);
     //console.log(socket.msgMap);
@@ -80,6 +84,11 @@ function packCreated(circuit_id) {
 }
 
 exports.sendCreated = function(socket, circuit_id) {
+    if (socket == null) {
+        console.log("Trying to send CREATED " + circuit_id + " but socket no longer exists.");
+        return;
+    }
+
     cell = packCreated(circuit_id);
     socket.write(cell);
     console.log(">>> Sent CREATED " + circuit_id);
@@ -90,6 +99,10 @@ function packDestroy(circuit_id) {
 }
 
 exports.sendDestroy = function(socket, circuit_id) {
+    if (socket == null) {
+        console.log("Trying to send DESTROY " + circuit_id + " but socket no longer exists.");
+        return;
+    }
     cell = packDestroy(circuit_id);
     socket.write(cell);
     console.log(">>> Sent DESTROY " + circuit_id);
@@ -107,6 +120,11 @@ function packOpen(sender_id, receiver_id) {
 }
 
 exports.sendOpen = function(res, rej, socket, opener_id, opened_id) {
+    if (socket == null) {
+        console.log("Trying to send OPEN to " + opened_id + " but socket no longer exists.");
+        return;
+    }
+
     cell = packOpen(opener_id, opened_id);
     //console.log(socket.msgMap);
     socket.msgMap[OPEN] = {resolve: res, reject: rej, timeout: setTimeout(function(){console.log("timeout");rej();}, TIMEOUT)};
@@ -136,6 +154,11 @@ function packOpened(opener_id, opened_id) {
 }
 
 exports.sendOpened = function(socket, opener_id, opened_id) {
+    if (socket == null) {
+        console.log("Trying to send OPENED to " + opener_id + " but socket no longer exists.");
+        return;
+    }
+
     cell = packOpened(opener_id, opened_id);
     socket.write(cell);
     console.log(">>> Sent OPENED " + opener_id);
@@ -158,9 +181,14 @@ function packOpenFailed(sender_id, receiver_id) {
 }
 
 exports.sendOpenFailed = function(socket, sender_id, receiver_id) {
+    if (socket == null) {
+        console.log("Trying to send OPEN_FAILED to " + sender_id + " but socket no longer exists.");
+        return;
+    }
+
     cell = packOpenFailed(sender_id, receiver_id);
     socket.write(cell);
-    // console.log(">>> Sent OPEN_FAILED " + receiver_id);
+    console.log(">>> Sent OPEN_FAILED " + sender_id);
 }
 
 exports.unpackOpenFailed = function(message_buffer) {
@@ -172,6 +200,11 @@ function packCreateFailed(circuit_id) {
 }
 
 exports.sendCreateFailed = function(socket, circuit_id) {
+    if (socket == null) {
+        console.log("Trying to send CREATE_FAILED " + circuit_id + " but socket no longer exists.");
+        return;
+    }
+
     cell = packCreateFailed(circuit_id);
     socket.write(cell);
     console.log(">>> Sent CREATE_FAILED " + circuit_id);
@@ -198,6 +231,11 @@ function packRelay(circuit_id, stream_id, relay_command, body) {
 }
 
 exports.sendRelay = function(res, rej, socket, circuit_id, stream_id, relay_command, body) {
+    if (socket == null) {
+        console.log("Trying to send RELAY " + relay_command + " on " + circuit_id + " but socket no longer exists.");
+        return;
+    }
+
   // console.log("in relay" + relay_command);
   var cell = packRelay(circuit_id, stream_id, relay_command, body);
   //console.log("packed relay");
