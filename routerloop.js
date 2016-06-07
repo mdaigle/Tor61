@@ -218,16 +218,16 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
                 });
                 break;
               case protocol.RELAY_DATA:
-                console.log("IN RELAY_DATA");
+                // console.log("IN RELAY_DATA");
                 // get streamID and find socket, forward data
                 destSock = mappings.getStreamToSocketMapping(otherNodeID, circID, msgFields.stream_id);
-                console.log("GOT MAPPING: ");
-                console.log(destSock);
-                console.log(msgFields.body);
+                // console.log("GOT MAPPING: ");
+                // console.log(destSock);
+                // console.log(msgFields.body);
                 if (destSock) {
-                  console.log("PREPARING TO WRITE");
+                //   console.log("PREPARING TO WRITE");
                   destSock.write(msgFields.body);
-                  console.log("WROTE");
+                //   console.log("WROTE");
                 } else {
                     console.log("can't find destination socket for data relay");
                 }

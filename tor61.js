@@ -24,7 +24,7 @@ var proxyPort = args[2];
 var nodeID = torutils.generateNodeID();
 console.log("nodeID:" + nodeID);
 
-var service_name = "daigle-tsen-" + group_num + "-" + instance_num;
+var service_name = "Tor61Router-" + group_num + "-" + instance_num;
 
 // need mapping from nodes -> sockets
 var torNode = net.createServer((socket) => {
@@ -108,7 +108,7 @@ function buildCircuit(onCircuitCompletion) {
     process.exit(0);
   }
   maxBuildTries -= 1;
-  regagent.fetch("daigle-tsen-0666", function(response) {
+  regagent.fetch("Tor61Router", function(response) {
     //   console.log("Got a fetch response");
     if (!("entries" in response)) {
       console.log("reg fail");
