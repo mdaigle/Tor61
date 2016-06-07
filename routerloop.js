@@ -253,7 +253,7 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
                     torutils.sendWithoutPromise(protocol.sendRelay)(socket, circID, 0, protocol.RELAY_EXTENDED, null);
                 } else {
                   var newCircID = torutils.generateCircID((mappings.getNodeToSocketMapping(newID) == null));
-                  torutils.createFirstHop(newHost, newPort, nodeID, newID, function() {
+                  torutils.createFirstHop(newHost, newPort, nodeID, newID, newCircID, function() {
                     mappings.addCircuitMapping(otherNodeID, circID, newID, newCircID);
                     mappings.addCircuitMapping(newID, newCircID, otherNodeID, circID);
                     torutils.sendWithoutPromise(protocol.sendRelay)(socket, circID, 0, protocol.RELAY_EXTENDED, null);

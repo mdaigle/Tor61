@@ -86,9 +86,10 @@ exports.openTorConnection = function(host, port, nodeID, receiverID, successCall
 
 exports.createTorCircuit = function(nodeID, circID, successCallback, failCallback) {
   //console.log("sending create");
+  console.log("circID = " + circID);
   var socket = mappings.getNodeToSocketMapping(nodeID);
   exports.sendWithPromise(protocol.sendCreate, successCallback, failCallback)(socket, circID);
-  // console.log("sent create");
+  //console.log("sent create");
   //console.log(socket.UUID);
   //console.log(socket.msgMap);
 }
@@ -106,6 +107,7 @@ exports.createFirstHop = function(host, port, nodeID, receiverID, circID, succes
     mappings.addNodeToSocketMapping(receiverID, newSock);
     // console.log("open success");
     //console.log(newSock.msgMap);
+    console.log("circID = " + circID);
     exports.createTorCircuit(receiverID, circID, successCallback, failCallback);
   }
   exports.openTorConnection(host, port, nodeID, receiverID, openSuccessCallback, failCallback);
