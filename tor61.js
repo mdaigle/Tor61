@@ -108,7 +108,7 @@ function buildCircuit(onCircuitCompletion) {
     process.exit(0);
   }
   maxBuildTries -= 1;
-  regagent.fetch("Tor61Router", function(response) {
+  regagent.fetch("Tor61Router-0666", function(response) {
     //   console.log("Got a fetch response");
     if (!("entries" in response)) {
       console.log("reg fail");
@@ -133,7 +133,7 @@ function buildCircuit(onCircuitCompletion) {
 
         tempSock.on('error', (err) => {
             clearTimeout(timer);
-            console.log("err");
+            // console.log("err");
             tempSock.end();
             testNode(i+1, finalCallback);
         });
@@ -165,7 +165,7 @@ function buildCircuit(onCircuitCompletion) {
         firstNode["port"] = firstNode.service_addr.port;
       }while(firstNode.service_data == nodeID && numLayers >= 0);
       function failCallback() {
-        console.log("Failed");
+        console.log("Circuit building failed");
         buildCircuit(onCircuitCompletion);
       }
       firstCircID = torutils.generateCircID(mappings.getCircIDPartition(firstNode.service_data));
@@ -218,7 +218,7 @@ function buildCircuit(onCircuitCompletion) {
                     }
                 }.bind(this), failCallback);
           } else {
-              console.log("no fourth");
+            //   console.log("no fourth");
               onCircuitCompletion();
           }
         }.bind(this), failCallback);
@@ -243,8 +243,37 @@ var rl = readline.createInterface({
 rl.pause();
 rl.on('line', (line) => {
   if (line == "q") {
+      setTimeout(function(){process.exit(0)}, 20000);
     regagent.unregister(torNodePort, function() {
-      process.exit(0);
+        nodeIDs = mappings.getAllNodeIDs();
+        nodeIDs.forEach(function(elt) {
+            elt = parseInt(elt);
+            if (elt != null) {
+              var circuits = mappings.getAllCircuitMappings(elt);
+              if (circuits != null) {
+                  circuits.forEach(function(circ_elt){
+                      circ_elt = parseInt(circ_elt);
+                      tempInfo = mappings.getCircuitMapping(elt, circ_elt);
+                      if (tempInfo != null && tempInfo.nid != null && tempInfo.circid != null) {
+                          tempSock = mappings.getNodeToSocketMapping(elt);
+                          if (tempSock && tempSock.writable) {
+                              protocol.sendDestroy(tempSock, elt);
+                          }
+                      }
+                  });
+                }
+            }
+        });
+        setTimeout(function(){
+            nodeIDs.forEach(function(elt, i) {
+                elt = parseInt(elt);
+                tempSock = mappings.getNodeToSocketMapping(elt);
+                if (tempSock != null) {
+                    tempSock.destroy();
+                }
+            });
+            process.exit(0)
+        }, 5000);
     });
   }
 });

@@ -150,6 +150,9 @@ exports.startClientLoop = function(nid, proxyPort) {
                             beginRelay(address, hostPort);
                         }
 
+                        if (first_hop_socket == null) {
+                            console.log("Got client data but first hop socket has been closed.");
+                        }
 
                         first_hop_socket.on("error", (err) => {
                             //TODO: error handling

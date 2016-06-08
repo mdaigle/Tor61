@@ -71,14 +71,29 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
       var msgFields = protocol.unpack(command, msg);
       // reassign teardown now that items are in scope
       teardown = function(){
-        /*if (otherNodeID != null) {
+        if (otherNodeID != null) {
           mappings.removeNodeToSocketMapping(otherNodeID);
+          var circuits = mappings.getAllCircuitMappings(otherNodeID);
+
+          circuits.forEach(function(elt, i){
+              elt = parseInt(elt);
+              tempInfo = mappings.getCircuitMapping(otherNodeID, elt);
+              mappings.removeCircuitMapping(otherNodeID, elt);
+              mappings.removeCircuitMapping(tempInfo.nid, tempInfo.circid);
+              if (tempInfo != null && tempInfo.nid != null && tempInfo.circid != null) {
+                  tempSock = mappings.getNodeToSocketMapping(otherNodeID);
+                  if (tempSock && tempSock.writable) {
+                      protocol.sendDestroy(tempSock, elt);
+                  }
+              }
+          });
+
           if (circID != null && circID != 0) {
-            mappings.removeCircuitMapping(otherNodeID);
+            mappings.removeCircuitMapping(otherNodeID, circID);
           }
         }
-        socket.end();
-        if (protocol.OPEN in msgMap && "reject" in msgMap[protocol.OPEN]) {
+
+        /*if (protocol.OPEN in msgMap && "reject" in msgMap[protocol.OPEN]) {
           msgMap[protocol.OPEN].reject();
         }
         if (protocol.CREATE in msgMap) {
@@ -96,12 +111,10 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
               }
             }
           }
-        }*/
+      }*/
       };
 
       if (!socketValidated && (command != protocol.OPEN && command != protocol.OPENED && command != protocol.OPEN_FAILED)) {
-        console.log("tearing down");
-        teardown();
         return;
       }
       switch(command) {
@@ -197,6 +210,7 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
           otherSock = mappings.getNodeToSocketMapping(destInfo.nid);
           protocol.sendDestroy(otherSock, destInfo.circid);
           mappings.removeCircuitMapping(otherNodeID, circID);
+          mappings.removeCircuitMapping(destInfo.nid, destInfo.circid);
           break;
 
         case protocol.RELAY:
@@ -324,9 +338,7 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
     teardown();
     socket.end();
   });
-  socket.on('error', function() {
-    teardown();
-    socket.end();
-  }
-  );
+  socket.on('error', function(err) {
+      console.log("Socket Error", err);
+  });
 }

@@ -36,6 +36,10 @@ exports.getNodeToSocketMapping = function(nid) {
     return node_to_socket_map[nid];
 }
 
+exports.getAllNodeIDs = function() {
+    return Object.keys(node_to_socket_map);
+}
+
 exports.addCircuitMapping = function(srcID, srcCircID, destID, destCircID) {
     if (exports.getCircuitMapping(srcID, srcCircID) != null) {
         console.log("Overwriting mapping");
@@ -68,6 +72,14 @@ exports.getCircuitMapping = function(srcID, srcCircID) {
         }
     }
     return null;
+}
+
+exports.getAllCircuitMappings = function(nodeID) {
+    if (nodeID in circuit_map) {
+        return Object.keys(circuit_map[nodeID]);
+    } else {
+        return null;
+    }
 }
 
 /*exports.addStreamToStreamMapping = function(srcID, srcCircID, srcStreamID, destID, destCircID, destStreamID) {
