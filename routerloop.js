@@ -74,7 +74,7 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
         if (otherNodeID != null) {
           mappings.removeNodeToSocketMapping(otherNodeID);
           var circuits = mappings.getAllCircuitMappings(otherNodeID);
-          if (circuis != null) {
+          if (circuits != null) {
               circuits.forEach(function(elt, i){
                   elt = parseInt(elt);
                   tempInfo = mappings.getCircuitMapping(otherNodeID, elt);
