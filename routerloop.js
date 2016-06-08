@@ -74,19 +74,20 @@ exports.socketSetup = function(socket, nodeID, createdByUs) {
         if (otherNodeID != null) {
           mappings.removeNodeToSocketMapping(otherNodeID);
           var circuits = mappings.getAllCircuitMappings(otherNodeID);
-
-          circuits.forEach(function(elt, i){
-              elt = parseInt(elt);
-              tempInfo = mappings.getCircuitMapping(otherNodeID, elt);
-              mappings.removeCircuitMapping(otherNodeID, elt);
-              mappings.removeCircuitMapping(tempInfo.nid, tempInfo.circid);
-              if (tempInfo != null && tempInfo.nid != null && tempInfo.circid != null) {
-                  tempSock = mappings.getNodeToSocketMapping(otherNodeID);
-                  if (tempSock && tempSock.writable) {
-                      protocol.sendDestroy(tempSock, elt);
+          if (circuis != null) {
+              circuits.forEach(function(elt, i){
+                  elt = parseInt(elt);
+                  tempInfo = mappings.getCircuitMapping(otherNodeID, elt);
+                  mappings.removeCircuitMapping(otherNodeID, elt);
+                  mappings.removeCircuitMapping(tempInfo.nid, tempInfo.circid);
+                  if (tempInfo != null && tempInfo.nid != null && tempInfo.circid != null) {
+                      tempSock = mappings.getNodeToSocketMapping(otherNodeID);
+                      if (tempSock && tempSock.writable) {
+                          protocol.sendDestroy(tempSock, elt);
+                      }
                   }
-              }
-          });
+              });
+            }
 
           if (circID != null && circID != 0) {
             mappings.removeCircuitMapping(otherNodeID, circID);
