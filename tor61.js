@@ -246,20 +246,27 @@ rl.on('line', (line) => {
       setTimeout(function(){process.exit(0)}, 20000);
     regagent.unregister(torNodePort, function() {
         nodeIDs = mappings.getAllNodeIDs();
-        nodeIDs.forEach(function(elt) {
-            elt = parseInt(elt);
-            if (elt != null) {
-              var circuits = mappings.getAllCircuitMappings(elt);
+        nodeIDs.forEach(function(nid_elt) {
+            console.log("Closing connection to node " + nid_elt);
+            nid_elt = parseInt(nid_elt);
+            if (nid_elt != null) {
+              var circuits = mappings.getAllCircuitMappings(nid_elt);
+              console.log("got all circuit mappings");
               if (circuits != null) {
                   circuits.forEach(function(circ_elt){
-                      circ_elt = parseInt(circ_elt);
-                      tempInfo = mappings.getCircuitMapping(elt, circ_elt);
-                      if (tempInfo != null && tempInfo.nid != null && tempInfo.circid != null) {
-                          tempSock = mappings.getNodeToSocketMapping(elt);
+                    //   console.log("in circuit foreach");
+                    //   circ_elt = parseInt(circ_elt);
+                    //   tempInfo = mappings.getCircuitMapping(elt, circ_elt);
+                    //   console.log("Got a circuit mapping");
+                    //   console.log(tempInfo);
+                    //   if (tempInfo != null && tempInfo.nid != null && tempInfo.circid != null) {
+                          tempSock = mappings.getNodeToSocketMapping(nid_elt);
+                    //       console.log("Got socket mapping");
                           if (tempSock && tempSock.writable) {
-                              protocol.sendDestroy(tempSock, elt);
+                              console.log("Sending destroy to " + nid_elt + " on " + circ_elt);
+                              protocol.sendDestroy(tempSock, circ_elt);
                           }
-                      }
+                    //   }
                   });
                 }
             }
